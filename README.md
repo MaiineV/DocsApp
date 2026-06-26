@@ -4,7 +4,7 @@ A Notion-style **real-time collaborative docs app** for small teams — built on
 with row-level multi-tenancy, CRDT collaboration over the team's own infrastructure (no third-party
 realtime vendor), and token-based team invitations.
 
-> **Live demo:** _coming soon (Vercel)_
+> **Live demo:** https://docs-app-orcin.vercel.app
 > **Stack:** Next.js 16 (App Router, RSC, Server Actions) · React 19 · TypeScript (strict) · Tailwind v4 ·
 > Supabase (Postgres + Auth + RLS + Realtime) · Yjs · BlockNote
 

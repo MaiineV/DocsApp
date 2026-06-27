@@ -32,6 +32,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           {teams.length > 0 ? (
             <TeamSwitcher teams={teams} activeTeamId={active?.id ?? null} />
           ) : null}
+          {active ? (
+            <Link
+              href={`/teams/${active.id}`}
+              className="rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-100"
+            >
+              Manage Team
+            </Link>
+          ) : null}
         </div>
         <div className="flex items-center gap-4 text-sm">
           <span className="hidden text-zinc-500 sm:inline">{user.email}</span>

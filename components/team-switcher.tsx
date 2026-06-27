@@ -51,12 +51,6 @@ export default function TeamSwitcher({
 
         <div className="my-1 border-t border-black/10 dark:border-white/10" />
         <Link
-          href={`/teams/${active.id}`}
-          className="block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-        >
-          Miembros de {active.name}
-        </Link>
-        <Link
           href="/teams/new"
           className="block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5"
         >

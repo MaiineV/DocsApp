@@ -1,9 +1,8 @@
 'use client'
 
-import { useMemo, useRef, useState, useTransition, type ChangeEvent, type FormEvent } from 'react'
+import { useRef, useState, useTransition, type ChangeEvent, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { updateProfile, updateAvatar, changePassword } from '@/app/(app)/profile/actions'
+import { updateProfile, uploadAvatar, changePassword } from '@/app/(app)/profile/actions'
 import { useI18n } from '@/components/i18n-provider'
 import Avatar from '@/components/avatar'
 
@@ -24,14 +23,13 @@ export default function ProfileEditor({
 }) {
   const { t } = useI18n()
   const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
 
   const [nickname, setNickname] = useState(initialNickname)
   const [nickMsg, setNickMsg] = useState('')
   const [savingNick, startNick] = useTransition()
 
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl)
-  const [uploading, setUploading] = useState(false)
+  const [uploading, startUpload] = useTransition()
   const [avatarErr, setAvatarErr] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -42,7 +40,7 @@ export default function ProfileEditor({
   const emailPrefix = email.split('@')[0]
   const display = nickname.trim() || emailPrefix
 
-  async function onPickFile(e: ChangeEvent<HTMLInputElement>) {
+  function onPickFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = '' // permite re-subir el mismo archivo
     if (!file) return
@@ -50,24 +48,14 @@ export default function ProfileEditor({
     if (!file.type.startsWith('image/')) return setAvatarErr(t.profile.avatarType)
     if (file.size > MAX_AVATAR_BYTES) return setAvatarErr(t.profile.avatarTooBig)
 
-    setUploading(true)
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
-    const path = `${userId}/${crypto.randomUUID()}.${ext}`
-    const { error: upErr } = await supabase.storage
-      .from('avatars')
-      .upload(path, file, { upsert: true, contentType: file.type })
-    if (upErr) {
-      setUploading(false)
-      return setAvatarErr(upErr.message)
-    }
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('avatars').getPublicUrl(path)
-    const res = await updateAvatar(publicUrl)
-    setUploading(false)
-    if (!res.ok) return setAvatarErr(res.error ?? '')
-    setAvatarUrl(publicUrl)
-    router.refresh()
+    const fd = new FormData()
+    fd.append('file', file)
+    startUpload(async () => {
+      const res = await uploadAvatar(fd)
+      if (!res.ok) return setAvatarErr(res.error ?? '')
+      setAvatarUrl(res.url ?? null)
+      router.refresh()
+    })
   }
 
   function onSaveNick(e: FormEvent) {

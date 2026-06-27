@@ -2,22 +2,23 @@
 // (sin React/Supabase) → server y client.
 
 export type DocRow = { id: string; title: string; parent_id: string | null }
-export type DocNode = DocRow & { children: DocNode[] }
+export type DocNode<T extends DocRow = DocRow> = T & { children: DocNode<T>[] }
 
 // O(n) con un Map (sin .find() en loops). Un doc cuyo padre no está en la lista
 // (cross-team / borrado) se trata como raíz. Hermanos ordenados por título.
-export function buildDocTree(rows: DocRow[]): DocNode[] {
-  const byId = new Map<string, DocNode>()
+// Genérico → preserva campos extra de la fila (p.ej. updated_at).
+export function buildDocTree<T extends DocRow>(rows: T[]): DocNode<T>[] {
+  const byId = new Map<string, DocNode<T>>()
   for (const r of rows) byId.set(r.id, { ...r, children: [] })
 
-  const roots: DocNode[] = []
+  const roots: DocNode<T>[] = []
   for (const node of byId.values()) {
     const parent = node.parent_id ? byId.get(node.parent_id) : undefined
     if (parent) parent.children.push(node)
     else roots.push(node)
   }
 
-  const sortRec = (nodes: DocNode[]) => {
+  const sortRec = (nodes: DocNode<T>[]) => {
     nodes.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
     for (const n of nodes) sortRec(n.children)
   }

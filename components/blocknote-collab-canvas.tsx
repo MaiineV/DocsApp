@@ -88,8 +88,11 @@ export default function BlocknoteCollabCanvas({
     }
   }, [provider, supabase])
 
-  // 5) Persistencia: el persister ELECTO (menor clientID conectado) guarda
-  //    debounced. El CAS del server es el backstop si dos guardan a la vez.
+  // 5) Persistencia: cada cliente guarda SUS cambios locales (debounced). Los
+  //    cambios remotos los persiste su autor. No se elige un "persister" global
+  //    (podía caer en un cliente fantasma de awareness y no guardar nada — p.ej.
+  //    mover un bloque no disparaba guardado). El CAS+merge del server hace
+  //    seguro que varios escriban a la vez (convergen, no se pisan).
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const persistNow = useCallback(async () => {
@@ -102,13 +105,8 @@ export default function BlocknoteCollabCanvas({
 
   useEffect(() => {
     if (!editable) return
-    const schedule = () => {
-      // Elección: solo persiste el editor con menor clientID conectado, para no
-      // tener N escrituras por cada cambio. getStates() = clientes que anuncian
-      // awareness (todos editores). Si está vacío, persisto yo.
-      const ids = [...provider.awareness.getStates().keys()]
-      const isPersister = ids.length === 0 || Math.min(...ids) === doc.clientID
-      if (!isPersister) return
+    const schedule = (_update: Uint8Array, origin: unknown) => {
+      if (origin === provider) return // cambio remoto (lo persiste su autor)
       if (saveTimer.current) clearTimeout(saveTimer.current)
       saveTimer.current = setTimeout(persistNow, PERSIST_DEBOUNCE_MS)
     }

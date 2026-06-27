@@ -1,13 +1,13 @@
+import { Fragment } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { getActiveTeam } from '@/lib/teams'
-import { getDictionary, getLocale } from '@/lib/i18n'
+import { listTeamDocs, type TeamDocRow } from '@/lib/documents'
+import { buildDocTree, type DocNode } from '@/lib/doc-tree'
+import { getDictionary, getLocale, type Locale } from '@/lib/i18n'
 import { fmt } from '@/lib/i18n/format'
 import { SubmitButton } from '@/components/submit-button'
 import { createDocument } from './actions'
-
-type DocRow = { id: string; title: string; updated_at: string }
 
 export default async function DocsPage({
   searchParams,
@@ -17,16 +17,14 @@ export default async function DocsPage({
   const team = await getActiveTeam()
   if (!team) redirect('/onboarding')
 
-  const [{ error }, supabase] = await Promise.all([searchParams, createClient()])
-  const { data: docs } = await supabase
-    .from('documents')
-    .select('id, title, updated_at')
-    .eq('team_id', team.id)
-    .order('updated_at', { ascending: false })
-
-  const rows = (docs ?? []) as DocRow[]
+  const [{ error }, docs, locale] = await Promise.all([
+    searchParams,
+    listTeamDocs(team.id),
+    getLocale(),
+  ])
+  const t = getDictionary(locale)
+  const tree = buildDocTree(docs)
   const canEdit = team.role !== 'viewer'
-  const t = getDictionary(await getLocale())
 
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
@@ -47,28 +45,57 @@ export default async function DocsPage({
         </p>
       ) : null}
 
-      {rows.length === 0 ? (
+      {tree.length === 0 ? (
         <div className="mt-10 rounded-lg border border-dashed border-black/15 p-12 text-center text-zinc-500 dark:border-white/15">
           {fmt(t.docs.emptyTitle, { team: team.name })}
           {canEdit ? t.docs.emptyCreate : ''}
         </div>
       ) : (
         <ul className="mt-6 divide-y divide-black/10 dark:divide-white/10">
-          {rows.map((doc) => (
-            <li key={doc.id}>
-              <Link
-                href={`/docs/${doc.id}`}
-                className="flex items-center justify-between py-3 transition-colors hover:bg-black/[.03] dark:hover:bg-white/[.03]"
-              >
-                <span className="font-medium">{doc.title || t.common.untitled}</span>
-                <span className="text-xs text-zinc-400">
-                  {new Date(doc.updated_at).toLocaleDateString()}
-                </span>
-              </Link>
-            </li>
-          ))}
+          <DocTreeRows nodes={tree} depth={0} untitled={t.common.untitled} locale={locale} />
         </ul>
       )}
     </div>
+  )
+}
+
+// Lista jerárquica: cada doc con sus hijos anidados (indentados por profundidad),
+// igual que el árbol del sidebar.
+function DocTreeRows({
+  nodes,
+  depth,
+  untitled,
+  locale,
+}: {
+  nodes: DocNode<TeamDocRow>[]
+  depth: number
+  untitled: string
+  locale: Locale
+}) {
+  return (
+    <>
+      {nodes.map((node) => (
+        <Fragment key={node.id}>
+          <li>
+            <Link
+              href={`/docs/${node.id}`}
+              className="flex items-center justify-between py-3 transition-colors hover:bg-black/[.03] dark:hover:bg-white/[.03]"
+              style={{ paddingLeft: depth * 20 }}
+            >
+              <span className="truncate font-medium">
+                {depth > 0 ? <span className="mr-1.5 text-zinc-300">└</span> : null}
+                {node.title || untitled}
+              </span>
+              <span className="shrink-0 pl-3 text-xs text-zinc-400">
+                {new Date(node.updated_at).toLocaleDateString(locale)}
+              </span>
+            </Link>
+          </li>
+          {node.children.length > 0 ? (
+            <DocTreeRows nodes={node.children} depth={depth + 1} untitled={untitled} locale={locale} />
+          ) : null}
+        </Fragment>
+      ))}
+    </>
   )
 }

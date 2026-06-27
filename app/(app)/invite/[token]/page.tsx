@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { SubmitButton } from '@/components/submit-button'
 import { acceptInvitation, switchAccount } from './actions'
 
 type Preview = {
@@ -44,12 +45,9 @@ export default async function InvitePage({
               iniciá sesión con la dirección correcta para aceptarla.
             </p>
             <form action={switchAccount.bind(null, token)} className="mt-6">
-              <button
-                type="submit"
-                className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5"
-              >
+              <SubmitButton className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5">
                 Cambiar de cuenta
-              </button>
+              </SubmitButton>
             </form>
           </div>
         ) : (
@@ -68,12 +66,9 @@ export default async function InvitePage({
             ) : null}
 
             <form action={acceptInvitation.bind(null, token)} className="mt-6 flex items-center gap-3">
-              <button
-                type="submit"
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-              >
+              <SubmitButton className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
                 Aceptar invitación
-              </button>
+              </SubmitButton>
               <Link href="/docs" className="text-sm text-zinc-500 hover:underline">
                 Ahora no
               </Link>

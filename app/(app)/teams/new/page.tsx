@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createTeam } from '@/app/(app)/teams/actions'
+import { SubmitButton } from '@/components/submit-button'
 
 // Crear un equipo ADICIONAL (a diferencia de /onboarding, que es solo para el
 // primero). createTeam deja el nuevo equipo como activo y redirige a /docs.
@@ -39,12 +40,9 @@ export default async function NewTeamPage({
               className="rounded-md border border-black/15 bg-transparent px-3 py-2 outline-none focus:border-black/40 dark:border-white/15"
             />
           </label>
-          <button
-            type="submit"
-            className="mt-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
+          <SubmitButton className="mt-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
             Crear equipo
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </div>

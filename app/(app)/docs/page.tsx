@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveTeam } from '@/lib/teams'
+import { SubmitButton } from '@/components/submit-button'
 import { createDocument } from './actions'
 
 type DocRow = { id: string; title: string; updated_at: string }
@@ -30,12 +31,9 @@ export default async function DocsPage({
         <h1 className="text-2xl font-semibold tracking-tight">Documentos</h1>
         {canEdit ? (
           <form action={createDocument}>
-            <button
-              type="submit"
-              className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
+            <SubmitButton className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
               Nuevo documento
-            </button>
+            </SubmitButton>
           </form>
         ) : null}
       </div>

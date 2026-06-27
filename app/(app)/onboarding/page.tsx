@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getMyTeams } from '@/lib/teams'
 import { createTeam } from '@/app/(app)/teams/actions'
+import { SubmitButton } from '@/components/submit-button'
 
 export default async function OnboardingPage({
   searchParams,
@@ -36,12 +37,9 @@ export default async function OnboardingPage({
               className="rounded-md border border-black/15 bg-transparent px-3 py-2 outline-none focus:border-black/40 dark:border-white/15"
             />
           </label>
-          <button
-            type="submit"
-            className="mt-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
+          <SubmitButton className="mt-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
             Crear workspace
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </div>

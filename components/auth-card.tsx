@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import GoogleButton from '@/components/google-button'
+import { SubmitButton } from '@/components/submit-button'
 
 type AuthCardProps = {
   title: string
@@ -49,12 +50,9 @@ export function AuthCard({ title, action, submitLabel, error, footer, next }: Au
               className="rounded-md border border-black/15 bg-transparent px-3 py-2 outline-none focus:border-black/40 dark:border-white/15"
             />
           </label>
-          <button
-            type="submit"
-            className="mt-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
+          <SubmitButton className="mt-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
             {submitLabel}
-          </button>
+          </SubmitButton>
         </form>
 
         <div className="my-4 flex items-center gap-3 text-xs text-zinc-400">

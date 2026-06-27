@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getMyTeams } from '@/lib/teams'
 import { collabUserFromEmail } from '@/lib/collab'
+import { SubmitButton } from '@/components/submit-button'
 import { deleteDocument } from '../actions'
 import CollabDocEditor from '@/components/collab-doc-editor'
 
@@ -37,12 +38,9 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
         </Link>
         {canEdit ? (
           <form action={del}>
-            <button
-              type="submit"
-              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950"
-            >
+            <SubmitButton className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950">
               Borrar
-            </button>
+            </SubmitButton>
           </form>
         ) : null}
       </div>

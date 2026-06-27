@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { setActiveTeam } from '@/app/(app)/teams/actions'
+import { SubmitButton } from '@/components/submit-button'
 import type { TeamWithRole } from '@/lib/teams'
 
 // Selector de team activo en el header. Usa <details> (disclosure nativo,
@@ -33,8 +34,8 @@ export default function TeamSwitcher({
         </p>
         {teams.map((t) => (
           <form key={t.id} action={setActiveTeam.bind(null, t.id)}>
-            <button
-              type="submit"
+            <SubmitButton
+              spinner={false}
               className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5 ${
                 t.id === active.id ? 'font-semibold' : ''
               }`}
@@ -44,7 +45,7 @@ export default function TeamSwitcher({
                 {t.id === active.id ? '✓ ' : ''}
                 {t.role}
               </span>
-            </button>
+            </SubmitButton>
           </form>
         ))}
 

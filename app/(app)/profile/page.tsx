@@ -29,7 +29,6 @@ export default async function ProfilePage() {
         userId={user.id}
         email={user.email ?? ''}
         initialNickname={profile?.nickname ?? ''}
-        initialAvatarUrl={profile?.avatar_url ?? null}
         canChangePassword={canChangePassword}
       />
     </div>

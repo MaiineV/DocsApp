@@ -173,6 +173,7 @@ export const es = {
     passwordChanged: 'Contraseña actualizada',
     passwordTooShort: 'La contraseña debe tener al menos 6 caracteres.',
     googleAccount: 'Iniciás sesión con Google — la contraseña la maneja Google.',
+    uploadFailed: 'No se pudo subir la imagen.',
   },
 }
 

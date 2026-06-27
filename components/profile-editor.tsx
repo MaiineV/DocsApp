@@ -1,24 +1,20 @@
 'use client'
 
-import { useRef, useState, useTransition, type ChangeEvent, type FormEvent } from 'react'
+import { useState, useTransition, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateProfile, uploadAvatar, changePassword } from '@/app/(app)/profile/actions'
+import { updateProfile, changePassword } from '@/app/(app)/profile/actions'
 import { useI18n } from '@/components/i18n-provider'
 import Avatar from '@/components/avatar'
-
-const MAX_AVATAR_BYTES = 2 * 1024 * 1024
 
 export default function ProfileEditor({
   userId,
   email,
   initialNickname,
-  initialAvatarUrl,
   canChangePassword,
 }: {
   userId: string
   email: string
   initialNickname: string
-  initialAvatarUrl: string | null
   canChangePassword: boolean
 }) {
   const { t } = useI18n()
@@ -28,35 +24,12 @@ export default function ProfileEditor({
   const [nickMsg, setNickMsg] = useState('')
   const [savingNick, startNick] = useTransition()
 
-  const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl)
-  const [uploading, startUpload] = useTransition()
-  const [avatarErr, setAvatarErr] = useState('')
-  const fileRef = useRef<HTMLInputElement>(null)
-
   const [pw, setPw] = useState('')
   const [pwMsg, setPwMsg] = useState('')
   const [changingPw, startPw] = useTransition()
 
   const emailPrefix = email.split('@')[0]
   const display = nickname.trim() || emailPrefix
-
-  function onPickFile(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    e.target.value = '' // permite re-subir el mismo archivo
-    if (!file) return
-    setAvatarErr('')
-    if (!file.type.startsWith('image/')) return setAvatarErr(t.profile.avatarType)
-    if (file.size > MAX_AVATAR_BYTES) return setAvatarErr(t.profile.avatarTooBig)
-
-    const fd = new FormData()
-    fd.append('file', file)
-    startUpload(async () => {
-      const res = await uploadAvatar(fd)
-      if (!res.ok) return setAvatarErr(res.error ?? '')
-      setAvatarUrl(res.url ?? null)
-      router.refresh()
-    })
-  }
 
   function onSaveNick(e: FormEvent) {
     e.preventDefault()
@@ -94,24 +67,13 @@ export default function ProfileEditor({
 
   return (
     <div className="mt-8 space-y-10">
-      <section>
-        <h2 className={h2Cls}>{t.profile.photo}</h2>
-        <div className="mt-3 flex items-center gap-4">
-          <Avatar src={avatarUrl} name={display} seed={userId} size={64} />
-          <div>
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              className="rounded-md border border-black/15 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-black/5 disabled:opacity-50 dark:border-white/15 dark:hover:bg-white/5"
-            >
-              {uploading ? t.profile.uploading : t.profile.changePhoto}
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} className="hidden" />
-            {avatarErr ? <p className="mt-2 text-xs text-red-600">{avatarErr}</p> : null}
-          </div>
+      <div className="flex items-center gap-3">
+        <Avatar name={display} seed={userId} size={56} />
+        <div className="min-w-0">
+          <p className="truncate font-medium">{display}</p>
+          <p className="truncate text-sm text-zinc-500">{email}</p>
         </div>
-      </section>
+      </div>
 
       <section>
         <h2 className={h2Cls}>{t.profile.nickname}</h2>

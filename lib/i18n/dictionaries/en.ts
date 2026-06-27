@@ -173,5 +173,6 @@ export const en: Dictionary = {
     passwordChanged: 'Password updated',
     passwordTooShort: 'The password must be at least 6 characters.',
     googleAccount: 'You sign in with Google — your password is managed by Google.',
+    uploadFailed: 'Couldn’t upload the image.',
   },
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { setActiveTeam } from '@/app/(app)/teams/actions'
 import { SubmitButton } from '@/components/submit-button'
@@ -7,8 +8,8 @@ import { useI18n } from '@/components/i18n-provider'
 import type { TeamWithRole } from '@/lib/teams'
 
 // Selector de team activo en el header. Usa <details> (disclosure nativo,
-// accesible por teclado) para abrir el menú sin estado/click-outside manual.
-// Cada team es un form con el Server Action bindeado → funciona sin JS.
+// accesible por teclado). Cada team es un form con el Server Action bindeado →
+// funciona sin JS; el JS solo agrega cerrar al click-afuera / Escape.
 export default function TeamSwitcher({
   teams,
   activeTeamId,
@@ -17,11 +18,32 @@ export default function TeamSwitcher({
   activeTeamId: string | null
 }) {
   const { t: tr } = useI18n()
+  const ref = useRef<HTMLDetailsElement>(null)
+
+  // Cerrar el menú al click afuera o con Escape (el <details> nativo no lo hace).
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const el = ref.current
+      if (el?.open && e.target instanceof Node && !el.contains(e.target)) {
+        el.open = false
+      }
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && ref.current?.open) ref.current.open = false
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [])
+
   const active = teams.find((t) => t.id === activeTeamId) ?? teams[0]
   if (!active) return null
 
   return (
-    <details className="group relative">
+    <details ref={ref} className="group relative">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
         <span className="max-w-[12rem] truncate">{active.name}</span>
         <span className="text-zinc-400">· {active.role}</span>

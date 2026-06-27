@@ -26,6 +26,7 @@ export type Document = {
   title: string
   content: string
   created_by: string | null
+  parent_id: string | null
   created_at: string
   updated_at: string
 }

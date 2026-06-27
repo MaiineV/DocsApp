@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getMyTeams } from '@/lib/teams'
+import { getDocument } from '@/lib/documents'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { collabUserFromEmail } from '@/lib/collab'
 import { SubmitButton } from '@/components/submit-button'
@@ -12,12 +13,8 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
   const { id } = await params
 
   const supabase = await createClient()
-  const [{ data: doc }, { data: { user } }] = await Promise.all([
-    supabase
-      .from('documents')
-      .select('id, title, content, team_id, updated_at, ydoc_state')
-      .eq('id', id)
-      .maybeSingle(),
+  const [doc, { data: { user } }] = await Promise.all([
+    getDocument(id), // cacheado → reusa el fetch del layout
     supabase.auth.getUser(),
   ])
 

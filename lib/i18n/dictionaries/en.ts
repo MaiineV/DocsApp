@@ -13,6 +13,17 @@ export const en: Dictionary = {
     copied: 'Copied!',
     untitled: 'Untitled',
   },
+  sidebar: {
+    pages: 'Pages',
+    newPage: 'New page',
+    newChild: 'Add subpage',
+    collapse: 'Collapse panel',
+    expand: 'Expand panel',
+    empty: 'No documents yet.',
+  },
+  mention: {
+    empty: 'No matching documents',
+  },
   roles: {
     owner: 'owner',
     admin: 'admin',

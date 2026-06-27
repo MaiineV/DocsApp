@@ -13,6 +13,17 @@ export const es = {
     copied: '¡Copiado!',
     untitled: 'Sin título',
   },
+  sidebar: {
+    pages: 'Páginas',
+    newPage: 'Nueva página',
+    newChild: 'Agregar subpágina',
+    collapse: 'Ocultar panel',
+    expand: 'Mostrar panel',
+    empty: 'Sin documentos todavía.',
+  },
+  mention: {
+    empty: 'No hay documentos que coincidan',
+  },
   roles: {
     owner: 'owner',
     admin: 'admin',

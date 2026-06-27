@@ -7,22 +7,37 @@ import { getActiveTeam } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { casMergeYdoc } from '@/lib/yjs/persist'
 
-// Crea un documento vacío en el team activo y abre el editor.
-// El team_id se deriva del server (no del cliente); RLS igual lo valida.
-export async function createDocument() {
-  const team = await getActiveTeam()
-  if (!team) redirect('/onboarding')
-
+// Crea un documento vacío y abre el editor. Si `parentId` viene, el doc es hijo
+// de ese (y hereda su team — el trigger exige mismo team); si no, va al team
+// activo como raíz. El team_id se deriva del server; RLS + trigger lo validan.
+export async function createDocument(parentId: string | null = null) {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  let teamId: string
+  if (parentId) {
+    const { data: parent } = await supabase
+      .from('documents')
+      .select('team_id')
+      .eq('id', parentId)
+      .maybeSingle()
+    if (!parent) {
+      redirect(`/docs?error=${encodeURIComponent(getDictionary(await getLocale()).errors.docCreateFailed)}`)
+    }
+    teamId = parent.team_id as string
+  } else {
+    const team = await getActiveTeam()
+    if (!team) redirect('/onboarding')
+    teamId = team.id
+  }
+
   // title vacío → la UI muestra el "Sin título"/"Untitled" localizado.
   const { data, error } = await supabase
     .from('documents')
-    .insert({ team_id: team.id, created_by: user.id, title: '' })
+    .insert({ team_id: teamId, created_by: user.id, title: '', parent_id: parentId })
     .select('id')
     .single()
 
@@ -31,8 +46,30 @@ export async function createDocument() {
     redirect(`/docs?error=${encodeURIComponent(msg)}`)
   }
 
-  revalidatePath('/docs')
+  revalidatePath('/docs', 'layout')
   redirect(`/docs/${data.id}`)
+}
+
+// Mueve un documento bajo otro padre (o a raíz con null). El trigger DB rechaza
+// padre de otro team / auto-padre / ciclo; la RLS exige editor+.
+export async function moveDocument(
+  id: string,
+  newParentId: string | null,
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('documents')
+    .update({ parent_id: newParentId })
+    .eq('id', id)
+    .select('id')
+
+  if (error) return { ok: false, error: error.message } // trigger: ciclo/mismo-team
+  if (!data || data.length === 0) {
+    return { ok: false, error: getDictionary(await getLocale()).errors.noEditPermission }
+  }
+
+  revalidatePath('/docs', 'layout')
+  return { ok: true }
 }
 
 // Persiste el snapshot Yjs (autosave colaborativo). `snapshotB64` =
@@ -73,7 +110,8 @@ export async function persistTitle(
   return { ok: true }
 }
 
-// Borra el documento. RLS exige rol editor o superior.
+// Borra el documento. RLS exige rol editor o superior. Los hijos NO se borran:
+// suben a raíz (parent_id pasa a null por ON DELETE SET NULL).
 export async function deleteDocument(id: string) {
   const supabase = await createClient()
   const { error } = await supabase.from('documents').delete().eq('id', id)
@@ -82,6 +120,6 @@ export async function deleteDocument(id: string) {
     redirect(`/docs/${id}?error=${encodeURIComponent(error.message)}`)
   }
 
-  revalidatePath('/docs')
+  revalidatePath('/docs', 'layout')
   redirect('/docs')
 }

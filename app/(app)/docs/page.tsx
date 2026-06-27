@@ -33,7 +33,7 @@ export default async function DocsPage({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">{t.docs.title}</h1>
         {canEdit ? (
-          <form action={createDocument}>
+          <form action={createDocument.bind(null, null)}>
             <SubmitButton className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
               {t.docs.newDoc}
             </SubmitButton>

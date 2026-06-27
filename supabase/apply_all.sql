@@ -288,7 +288,21 @@ create trigger memberships_protect_last_owner
 -- Es segura: valida auth.uid() explícitamente, el owner siempre es el llamante,
 -- es atómica (rollback si falla), y execute solo para authenticated.
 
-create or replace function public.create_team_with_owner(p_name text)
+-- Idempotency keys (una key por submit; índice único (created_by, key) parcial
+-- dedupea un doble-submit en el server). Deben existir antes de la RPC.
+alter table public.documents add column if not exists idempotency_key uuid;
+alter table public.teams add column if not exists idempotency_key uuid;
+
+create unique index if not exists documents_idem_idx
+  on public.documents (created_by, idempotency_key)
+  where idempotency_key is not null;
+create unique index if not exists teams_idem_idx
+  on public.teams (created_by, idempotency_key)
+  where idempotency_key is not null;
+
+drop function if exists public.create_team_with_owner(text);
+
+create or replace function public.create_team_with_owner(p_name text, p_key uuid default null)
 returns public.teams
 language plpgsql
 security definer
@@ -305,9 +319,26 @@ begin
     raise exception 'El nombre del team es obligatorio' using errcode = '22023';
   end if;
 
-  insert into public.teams (name, created_by)
-  values (trim(p_name), v_user)
+  -- Idempotencia: si ya existe un team de este usuario con esta key, devolverlo.
+  if p_key is not null then
+    select * into v_team from public.teams
+      where created_by = v_user and idempotency_key = p_key;
+    if found then
+      return v_team;
+    end if;
+  end if;
+
+  insert into public.teams (name, created_by, idempotency_key)
+  values (trim(p_name), v_user, p_key)
+  on conflict (created_by, idempotency_key) where idempotency_key is not null do nothing
   returning * into v_team;
+
+  -- Carrera: otro request con la misma key ganó el insert → devolver el suyo.
+  if v_team.id is null then
+    select * into v_team from public.teams
+      where created_by = v_user and idempotency_key = p_key;
+    return v_team;
+  end if;
 
   insert into public.memberships (team_id, user_id, role)
   values (v_team.id, v_user, 'owner');
@@ -316,8 +347,8 @@ begin
 end;
 $$;
 
-revoke all on function public.create_team_with_owner(text) from public, anon;
-grant execute on function public.create_team_with_owner(text) to authenticated;
+revoke all on function public.create_team_with_owner(text, uuid) from public, anon;
+grant execute on function public.create_team_with_owner(text, uuid) to authenticated;
 
 -- ============================================================
 -- supabase/migrations/20260626120000_yjs_persistence.sql

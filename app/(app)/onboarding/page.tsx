@@ -12,6 +12,8 @@ export default async function OnboardingPage({
   const [{ error }, teams] = await Promise.all([searchParams, getMyTeams()])
   if (teams.length > 0) redirect('/docs')
   const t = getDictionary(await getLocale())
+  // Key de idempotencia por render: un doble-submit reusa el team (la RPC dedupea).
+  const idempotencyKey = crypto.randomUUID()
 
   return (
     <div className="flex flex-1 items-center justify-center p-6">
@@ -26,6 +28,7 @@ export default async function OnboardingPage({
         ) : null}
 
         <form action={createTeam} className="mt-6 flex flex-col gap-4">
+          <input type="hidden" name="idempotency_key" value={idempotencyKey} />
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium">{t.onboarding.teamName}</span>
             <input

@@ -6,8 +6,7 @@ import { listTeamDocs, type TeamDocRow } from '@/lib/documents'
 import { buildDocTree, type DocNode } from '@/lib/doc-tree'
 import { getDictionary, getLocale, type Locale } from '@/lib/i18n'
 import { fmt } from '@/lib/i18n/format'
-import { SubmitButton } from '@/components/submit-button'
-import { createDocument } from './actions'
+import NewDocButton from '@/components/new-doc-button'
 
 export default async function DocsPage({
   searchParams,
@@ -31,11 +30,11 @@ export default async function DocsPage({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">{t.docs.title}</h1>
         {canEdit ? (
-          <form action={createDocument.bind(null, null)}>
-            <SubmitButton className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
-              {t.docs.newDoc}
-            </SubmitButton>
-          </form>
+          <NewDocButton
+            parentId={null}
+            label={t.docs.newDoc}
+            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          />
         ) : null}
       </div>
 

@@ -12,13 +12,15 @@ import { getDictionary, getLocale } from '@/lib/i18n'
 // como activo para que el usuario caiga adentro.
 export async function createTeam(formData: FormData) {
   const name = String(formData.get('name') ?? '').trim()
+  // Idempotencia: un doble-submit con la misma key reusa el team (la RPC dedupea).
+  const key = String(formData.get('idempotency_key') ?? '') || null
   const t = getDictionary(await getLocale())
   if (!name) {
     redirect(`/onboarding?error=${encodeURIComponent(t.errors.teamNameRequired)}`)
   }
 
   const supabase = await createClient()
-  const { data, error } = await supabase.rpc('create_team_with_owner', { p_name: name })
+  const { data, error } = await supabase.rpc('create_team_with_owner', { p_name: name, p_key: key })
 
   if (error || !data) {
     redirect(`/onboarding?error=${encodeURIComponent(error?.message ?? t.errors.createTeamFailed)}`)

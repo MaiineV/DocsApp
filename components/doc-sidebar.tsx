@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { createDocument } from '@/app/(app)/docs/actions'
+import NewDocButton from '@/components/new-doc-button'
 import { buildDocTree, type DocNode } from '@/lib/doc-tree'
 import { useI18n } from '@/components/i18n-provider'
 
@@ -55,14 +55,16 @@ export default function DocSidebar({
           </div>
 
           {canEdit ? (
-            <form action={createDocument.bind(null, null)}>
-              <button
-                type="submit"
-                className="mt-1 flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-              >
-                <span className="text-base leading-none">+</span> {t.sidebar.newPage}
-              </button>
-            </form>
+            <NewDocButton
+              parentId={null}
+              ariaLabel={t.sidebar.newPage}
+              label={
+                <>
+                  <span className="text-base leading-none">+</span> {t.sidebar.newPage}
+                </>
+              }
+              className="mt-1 flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-black/5 disabled:opacity-50 dark:hover:bg-white/5"
+            />
           ) : null}
 
           {tree.length === 0 ? (
@@ -146,16 +148,12 @@ function DocTreeNode({
         </Link>
 
         {canEdit ? (
-          <form action={createDocument.bind(null, node.id)} className="shrink-0">
-            <button
-              type="submit"
-              aria-label={newChildLabel}
-              title={newChildLabel}
-              className="rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-black/5 hover:text-zinc-600 group-hover:opacity-100 dark:hover:bg-white/5"
-            >
-              +
-            </button>
-          </form>
+          <NewDocButton
+            parentId={node.id}
+            ariaLabel={newChildLabel}
+            label="+"
+            className="shrink-0 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-black/5 hover:text-zinc-600 group-hover:opacity-100 disabled:opacity-50 dark:hover:bg-white/5"
+          />
         ) : null}
       </div>
 

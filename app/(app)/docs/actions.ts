@@ -10,7 +10,9 @@ import { casMergeYdoc } from '@/lib/yjs/persist'
 // Crea un documento vacío y abre el editor. Si `parentId` viene, el doc es hijo
 // de ese (y hereda su team — el trigger exige mismo team); si no, va al team
 // activo como raíz. El team_id se deriva del server; RLS + trigger lo validan.
-export async function createDocument(parentId: string | null = null) {
+// `idempotencyKey`: un doble-submit con la misma key NO crea dos — el índice
+// único (created_by, key) lo dedupea y abrimos el doc ya creado.
+export async function createDocument(parentId: string | null = null, idempotencyKey?: string) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -37,13 +39,34 @@ export async function createDocument(parentId: string | null = null) {
   // title vacío → la UI muestra el "Sin título"/"Untitled" localizado.
   const { data, error } = await supabase
     .from('documents')
-    .insert({ team_id: teamId, created_by: user.id, title: '', parent_id: parentId })
+    .insert({
+      team_id: teamId,
+      created_by: user.id,
+      title: '',
+      parent_id: parentId,
+      idempotency_key: idempotencyKey ?? null,
+    })
     .select('id')
     .single()
 
-  if (error || !data) {
-    const msg = error?.message ?? getDictionary(await getLocale()).errors.docCreateFailed
-    redirect(`/docs?error=${encodeURIComponent(msg)}`)
+  if (error) {
+    // Doble-submit con la misma key → el doc ya existe: abrirlo (idempotente).
+    if (error.code === '23505' && idempotencyKey) {
+      const { data: existing } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('created_by', user.id)
+        .eq('idempotency_key', idempotencyKey)
+        .maybeSingle()
+      if (existing) {
+        revalidatePath('/docs', 'layout')
+        redirect(`/docs/${existing.id}`)
+      }
+    }
+    redirect(`/docs?error=${encodeURIComponent(error.message)}`)
+  }
+  if (!data) {
+    redirect(`/docs?error=${encodeURIComponent(getDictionary(await getLocale()).errors.docCreateFailed)}`)
   }
 
   revalidatePath('/docs', 'layout')

@@ -1,7 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useCreateBlockNote } from '@blocknote/react'
+import {
+  useCreateBlockNote,
+  SuggestionMenuController,
+  type DefaultReactSuggestionItem,
+} from '@blocknote/react'
 import { BlockNoteView } from '@blocknote/mantine'
 import '@blocknote/mantine/style.css'
 import { Y, BLOCKNOTE_FRAGMENT } from '@/lib/yjs/yjs'
@@ -11,6 +15,8 @@ import { schema } from '@/lib/blocknote-schema'
 import { SupabaseYjsProvider } from '@/lib/yjs/supabase-provider'
 import { createClient } from '@/lib/supabase/client'
 import { persistYdoc } from '@/app/(app)/docs/actions'
+import { useI18n } from '@/components/i18n-provider'
+import { DocTitleMapContext } from '@/components/doc-ref-chip'
 import type { CollabUser } from '@/lib/collab'
 
 export type SaveState = 'idle' | 'saving' | 'saved' | 'error'
@@ -22,6 +28,7 @@ type Props = {
   editable: boolean
   theme: 'light' | 'dark'
   user: CollabUser
+  teamDocs: { id: string; title: string }[] // otros docs del team para @menciones
   onSaveStateChange?: (s: SaveState) => void
 }
 
@@ -34,8 +41,10 @@ export default function BlocknoteCollabCanvas({
   editable,
   theme,
   user,
+  teamDocs,
   onSaveStateChange,
 }: Props) {
+  const { t } = useI18n()
   const supabase = useMemo(() => createClient(), [])
 
   // 1) Y.Doc + carga inicial (una sola vez, ANTES de bindear el editor).
@@ -142,5 +151,39 @@ export default function BlocknoteCollabCanvas({
     }
   }, [editable, doc, editor, docId])
 
-  return <BlockNoteView editor={editor} editable={editable} theme={theme} />
+  // 7) @menciones: mapa docId→título vivo para el chip, y el menú que se abre con
+  //    "@" para insertar una referencia a otro doc del team.
+  const titleMap = useMemo(
+    () => new Map(teamDocs.map((d) => [d.id, d.title])),
+    [teamDocs],
+  )
+
+  const getMentionItems = useCallback(
+    async (query: string): Promise<DefaultReactSuggestionItem[]> => {
+      const q = query.toLowerCase()
+      return teamDocs
+        .filter((d) => (d.title || '').toLowerCase().includes(q))
+        .slice(0, 10)
+        .map((d) => ({
+          title: d.title || t.common.untitled,
+          onItemClick: () => {
+            editor.insertInlineContent([
+              { type: 'docref', props: { docId: d.id, label: d.title || '' } },
+              ' ',
+            ])
+          },
+        }))
+    },
+    [teamDocs, editor, t.common.untitled],
+  )
+
+  return (
+    <DocTitleMapContext.Provider value={titleMap}>
+      <BlockNoteView editor={editor} editable={editable} theme={theme}>
+        {editable ? (
+          <SuggestionMenuController triggerCharacter="@" getItems={getMentionItems} />
+        ) : null}
+      </BlockNoteView>
+    </DocTitleMapContext.Provider>
+  )
 }

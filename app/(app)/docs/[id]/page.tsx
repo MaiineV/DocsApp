@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getMyTeams } from '@/lib/teams'
-import { getDocument } from '@/lib/documents'
+import { getDocument, listTeamDocs } from '@/lib/documents'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { collabUserFromEmail } from '@/lib/collab'
 import { SubmitButton } from '@/components/submit-button'
@@ -20,9 +20,15 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
 
   if (!doc) notFound()
 
-  const teams = await getMyTeams()
+  const [teams, allDocs] = await Promise.all([
+    getMyTeams(),
+    listTeamDocs(doc.team_id), // cacheado → reusa el fetch del layout
+  ])
   const role = teams.find((t) => t.id === doc.team_id)?.role
   const canEdit = role !== undefined && role !== 'viewer'
+
+  // Otros docs del team para el menú de @menciones (sin el actual).
+  const teamDocs = allDocs.filter((d) => d.id !== id).map((d) => ({ id: d.id, title: d.title }))
 
   const collabUser = collabUserFromEmail(user?.email, user?.id ?? '')
   const t = getDictionary(await getLocale())
@@ -51,6 +57,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
         initialYdocState={doc.ydoc_state}
         editable={canEdit}
         user={collabUser}
+        teamDocs={teamDocs}
       />
     </div>
   )

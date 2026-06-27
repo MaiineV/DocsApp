@@ -24,6 +24,7 @@ type Props = {
   initialYdocState: string | null
   editable: boolean
   user: CollabUser
+  teamDocs: { id: string; title: string }[]
 }
 
 const TITLE_DEBOUNCE_MS = 800
@@ -35,6 +36,7 @@ export default function CollabDocEditor({
   initialYdocState,
   editable,
   user,
+  teamDocs,
 }: Props) {
   const { t } = useI18n()
   const [title, setTitle] = useState(initialTitle)
@@ -95,6 +97,7 @@ export default function CollabDocEditor({
         editable={editable}
         theme={theme}
         user={user}
+        teamDocs={teamDocs}
         onSaveStateChange={setSaveState}
       />
     </div>

@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveTeam } from '@/lib/teams'
+import { getDictionary, getLocale } from '@/lib/i18n'
+import { fmt } from '@/lib/i18n/format'
 import { SubmitButton } from '@/components/submit-button'
 import { createDocument } from './actions'
 
@@ -24,15 +26,16 @@ export default async function DocsPage({
 
   const rows = (docs ?? []) as DocRow[]
   const canEdit = team.role !== 'viewer'
+  const t = getDictionary(await getLocale())
 
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Documentos</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t.docs.title}</h1>
         {canEdit ? (
           <form action={createDocument}>
             <SubmitButton className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
-              Nuevo documento
+              {t.docs.newDoc}
             </SubmitButton>
           </form>
         ) : null}
@@ -46,8 +49,8 @@ export default async function DocsPage({
 
       {rows.length === 0 ? (
         <div className="mt-10 rounded-lg border border-dashed border-black/15 p-12 text-center text-zinc-500 dark:border-white/15">
-          Todavía no hay documentos en <strong>{team.name}</strong>.
-          {canEdit ? ' Creá el primero.' : ''}
+          {fmt(t.docs.emptyTitle, { team: team.name })}
+          {canEdit ? t.docs.emptyCreate : ''}
         </div>
       ) : (
         <ul className="mt-6 divide-y divide-black/10 dark:divide-white/10">
@@ -57,7 +60,7 @@ export default async function DocsPage({
                 href={`/docs/${doc.id}`}
                 className="flex items-center justify-between py-3 transition-colors hover:bg-black/[.03] dark:hover:bg-white/[.03]"
               >
-                <span className="font-medium">{doc.title || 'Untitled'}</span>
+                <span className="font-medium">{doc.title || t.common.untitled}</span>
                 <span className="text-xs text-zinc-400">
                   {new Date(doc.updated_at).toLocaleDateString()}
                 </span>

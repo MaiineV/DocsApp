@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { changeMemberRole, removeMember } from '@/app/(app)/teams/[id]/actions'
+import { useI18n } from '@/components/i18n-provider'
+import { fmt } from '@/lib/i18n/format'
 import type { Role, TeamMember } from '@/lib/types'
 
 const ALL_ROLES: Role[] = ['viewer', 'editor', 'admin', 'owner']
@@ -21,6 +23,7 @@ export default function MembersList({
   callerRole,
   canManage,
 }: Props) {
+  const { t } = useI18n()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -32,17 +35,17 @@ export default function MembersList({
     setError(null)
     startTransition(async () => {
       const res = await changeMemberRole(teamId, userId, role)
-      if (!res.ok) setError(res.error ?? 'No se pudo cambiar el rol.')
+      if (!res.ok) setError(res.error ?? t.errors.changeRoleFailed)
     })
   }
 
   function onRemove(userId: string, email: string, self: boolean) {
-    const msg = self ? '¿Salir del equipo?' : `¿Remover a ${email} del equipo?`
+    const msg = self ? t.members.confirmLeave : fmt(t.members.confirmRemove, { email })
     if (!window.confirm(msg)) return
     setError(null)
     startTransition(async () => {
       const res = await removeMember(teamId, userId)
-      if (!res.ok) setError(res.error ?? 'No se pudo remover.')
+      if (!res.ok) setError(res.error ?? t.errors.removeFailed)
     })
   }
 
@@ -72,7 +75,7 @@ export default function MembersList({
                 <span className="truncate font-medium">{m.email}</span>
                 {self ? (
                   <span className="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800">
-                    vos
+                    {t.members.you}
                   </span>
                 ) : null}
               </div>
@@ -80,7 +83,7 @@ export default function MembersList({
               <div className="flex shrink-0 items-center gap-2">
                 {canManage ? (
                   <select
-                    aria-label={`Rol de ${m.email}`}
+                    aria-label={fmt(t.members.roleOf, { email: m.email })}
                     value={m.role}
                     disabled={!roleEditable || isPending}
                     onChange={(e) => onRoleChange(m.user_id, e.target.value as Role)}
@@ -103,7 +106,7 @@ export default function MembersList({
                     disabled={isPending}
                     className="rounded-md border border-red-200 px-2.5 py-1 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:hover:bg-red-950"
                   >
-                    {self ? 'Salir' : 'Remover'}
+                    {self ? t.members.leave : t.members.remove}
                   </button>
                 ) : null}
               </div>
@@ -113,9 +116,7 @@ export default function MembersList({
       </ul>
 
       {canManage && ownerCount === 1 ? (
-        <p className="mt-3 text-xs text-zinc-400">
-          Al último owner no se lo puede degradar ni remover.
-        </p>
+        <p className="mt-3 text-xs text-zinc-400">{t.members.lastOwnerNote}</p>
       ) : null}
     </div>
   )

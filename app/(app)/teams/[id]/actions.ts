@@ -3,6 +3,7 @@
 import { randomBytes } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { getDictionary, getLocale } from '@/lib/i18n'
 import type { Role } from '@/lib/types'
 
 type Result = { ok: boolean; error?: string }
@@ -19,11 +20,12 @@ export async function createInvitation(
   role: Role,
   ttlDays: number,
 ): Promise<Result & { token?: string }> {
+  const t = getDictionary(await getLocale())
   const normalizedEmail = email.trim().toLowerCase()
   if (!EMAIL_RE.test(normalizedEmail) || normalizedEmail.length > 320) {
-    return { ok: false, error: 'Email inválido.' }
+    return { ok: false, error: t.errors.invalidEmail }
   }
-  if (role === 'owner') return { ok: false, error: 'No se puede invitar como owner.' }
+  if (role === 'owner') return { ok: false, error: t.errors.noOwnerInvite }
 
   const ttl = Math.min(Math.max(Math.round(ttlDays) || 7, 1), 30)
   const expiresAt = new Date(Date.now() + ttl * 24 * 60 * 60 * 1000).toISOString()
@@ -33,7 +35,7 @@ export async function createInvitation(
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: 'No autenticado.' }
+  if (!user) return { ok: false, error: t.errors.notAuthenticated }
 
   const { data, error } = await supabase
     .from('invitations')
@@ -53,7 +55,7 @@ export async function createInvitation(
 
   if (error) return { ok: false, error: error.message }
   if (!data || data.length === 0) {
-    return { ok: false, error: 'No tenés permiso para invitar en este equipo.' }
+    return { ok: false, error: t.errors.noInvitePermission }
   }
 
   revalidatePath(`/teams/${teamId}`)
@@ -71,7 +73,7 @@ export async function revokeInvitation(teamId: string, invitationId: string): Pr
 
   if (error) return { ok: false, error: error.message }
   if (!data || data.length === 0) {
-    return { ok: false, error: 'No tenés permiso para revocar esta invitación.' }
+    return { ok: false, error: getDictionary(await getLocale()).errors.noRevokePermission }
   }
 
   revalidatePath(`/teams/${teamId}`)
@@ -96,7 +98,7 @@ export async function changeMemberRole(
 
   if (error) return { ok: false, error: error.message } // p.ej. trigger del último owner
   if (!data || data.length === 0) {
-    return { ok: false, error: 'No tenés permiso para cambiar este rol.' }
+    return { ok: false, error: getDictionary(await getLocale()).errors.noRolePermission }
   }
 
   revalidatePath(`/teams/${teamId}`)
@@ -117,7 +119,7 @@ export async function removeMember(teamId: string, userId: string): Promise<Resu
 
   if (error) return { ok: false, error: error.message }
   if (!data || data.length === 0) {
-    return { ok: false, error: 'No tenés permiso para remover a este miembro.' }
+    return { ok: false, error: getDictionary(await getLocale()).errors.noRemovePermission }
   }
 
   revalidatePath(`/teams/${teamId}`)

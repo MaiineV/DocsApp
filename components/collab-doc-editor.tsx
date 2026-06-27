@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import dynamic from 'next/dynamic'
 import { persistTitle } from '@/app/(app)/docs/actions'
+import { useI18n } from '@/components/i18n-provider'
 import type { CollabUser } from '@/lib/collab'
 import type { SaveState } from '@/components/blocknote-collab-canvas'
 
@@ -35,6 +36,7 @@ export default function CollabDocEditor({
   editable,
   user,
 }: Props) {
+  const { t } = useI18n()
   const [title, setTitle] = useState(initialTitle)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -73,7 +75,7 @@ export default function CollabDocEditor({
             value={title}
             onChange={onTitleChange}
             maxLength={200}
-            placeholder="Título"
+            placeholder={t.docs.titlePlaceholder}
             className="w-full border-0 bg-transparent text-3xl font-semibold tracking-tight outline-none placeholder:text-zinc-300"
           />
         ) : (
@@ -82,7 +84,7 @@ export default function CollabDocEditor({
         {editable ? (
           <SaveBadge state={saveState} />
         ) : (
-          <span className="shrink-0 text-xs text-zinc-400">Solo lectura</span>
+          <span className="shrink-0 text-xs text-zinc-400">{t.docs.readOnly}</span>
         )}
       </div>
 
@@ -100,11 +102,12 @@ export default function CollabDocEditor({
 }
 
 function SaveBadge({ state }: { state: SaveState }) {
+  const { t } = useI18n()
   const label: Record<SaveState, string> = {
     idle: '',
-    saving: 'Guardando…',
-    saved: 'Guardado ✓',
-    error: 'Error al guardar',
+    saving: t.docs.saving,
+    saved: t.docs.saved,
+    error: t.docs.saveError,
   }
   if (!label[state]) return null
   return (

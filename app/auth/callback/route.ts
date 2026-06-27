@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { safeNext } from '@/lib/auth/next'
+import { getDictionary, getLocale } from '@/lib/i18n'
 
 // Callback de Supabase Auth (PKCE): confirmación de email, magic links, OAuth.
 // Intercambia el `code` por una sesión (setea las cookies) y redirige al `next`
@@ -18,7 +19,8 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
 
+  const msg = getDictionary(await getLocale()).errors.sessionFailed
   return NextResponse.redirect(
-    new URL('/login?error=' + encodeURIComponent('No se pudo confirmar la sesión'), url.origin),
+    new URL('/login?error=' + encodeURIComponent(msg), url.origin),
   )
 }

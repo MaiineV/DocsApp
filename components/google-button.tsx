@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useI18n } from '@/components/i18n-provider'
 
 // "Continuar con Google". signInWithOAuth redirige el browser a Google, por eso
 // es client-only. Vuelve a /auth/callback (PKCE) con el `next` preservado.
 export default function GoogleButton({ next }: { next?: string }) {
+  const { t } = useI18n()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,7 +38,7 @@ export default function GoogleButton({ next }: { next?: string }) {
         className="flex w-full items-center justify-center gap-2 rounded-md border border-black/15 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-black/[.03] disabled:opacity-50 dark:border-white/15 dark:bg-transparent dark:text-zinc-200 dark:hover:bg-white/5"
       >
         <GoogleIcon />
-        {loading ? 'Redirigiendo…' : 'Continuar con Google'}
+        {loading ? t.auth.googleRedirecting : t.auth.google}
       </button>
       {error ? <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p> : null}
     </div>

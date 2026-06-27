@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getMyTeams } from '@/lib/teams'
+import { getDictionary, getLocale } from '@/lib/i18n'
+import { fmt } from '@/lib/i18n/format'
 import MembersList from '@/components/members-list'
 import InviteForm from '@/components/invite-form'
 import PendingInvites from '@/components/pending-invites'
@@ -38,21 +40,20 @@ export default async function TeamMembersPage({ params }: { params: Promise<{ id
   const members = (membersData ?? []) as TeamMember[]
   const invites = (invitesData ?? []) as Invitation[]
   const canManage = RANK[team.role] >= RANK.admin
+  const t = getDictionary(await getLocale())
 
   return (
     <div className="mx-auto w-full max-w-2xl flex-1 px-6 py-10">
       <Link href="/docs" className="text-sm text-zinc-500 hover:underline">
-        ← Documentos
+        {t.common.backToDocs}
       </Link>
       <h1 className="mt-3 text-2xl font-semibold tracking-tight">{team.name}</h1>
-      <p className="mt-1 text-sm text-zinc-500">
-        Miembros del equipo · tu rol: <span className="font-medium">{team.role}</span>
-      </p>
+      <p className="mt-1 text-sm text-zinc-500">{fmt(t.members.subtitle, { role: team.role })}</p>
 
       {canManage ? (
         <section className="mt-8">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-            Invitar
+            {t.members.sectionInvite}
           </h2>
           <div className="mt-3">
             <InviteForm teamId={id} />
@@ -61,7 +62,7 @@ export default async function TeamMembersPage({ params }: { params: Promise<{ id
           {invites.length > 0 ? (
             <div className="mt-6">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                Invitaciones pendientes ({invites.length})
+                {fmt(t.members.sectionPending, { n: invites.length })}
               </h3>
               <div className="mt-3">
                 <PendingInvites teamId={id} invites={invites} />
@@ -73,7 +74,7 @@ export default async function TeamMembersPage({ params }: { params: Promise<{ id
 
       <section className="mt-8">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-          Miembros ({members.length})
+          {fmt(t.members.sectionMembers, { n: members.length })}
         </h2>
         <div className="mt-3">
           <MembersList

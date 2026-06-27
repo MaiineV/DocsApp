@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { setActiveTeam } from '@/app/(app)/teams/actions'
 import { SubmitButton } from '@/components/submit-button'
+import { useI18n } from '@/components/i18n-provider'
 import type { TeamWithRole } from '@/lib/teams'
 
 // Selector de team activo en el header. Usa <details> (disclosure nativo,
@@ -15,6 +16,7 @@ export default function TeamSwitcher({
   teams: TeamWithRole[]
   activeTeamId: string | null
 }) {
+  const { t: tr } = useI18n()
   const active = teams.find((t) => t.id === activeTeamId) ?? teams[0]
   if (!active) return null
 
@@ -30,7 +32,7 @@ export default function TeamSwitcher({
 
       <div className="absolute left-0 z-20 mt-2 w-64 rounded-lg border border-black/10 bg-white p-1 shadow-lg dark:border-white/10 dark:bg-zinc-900">
         <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-          Equipos
+          {tr.header.teams}
         </p>
         {teams.map((t) => (
           <form key={t.id} action={setActiveTeam.bind(null, t.id)}>
@@ -54,7 +56,7 @@ export default function TeamSwitcher({
           href="/teams/new"
           className="block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5"
         >
-          + Crear equipo
+          {tr.header.createTeam}
         </Link>
       </div>
     </details>

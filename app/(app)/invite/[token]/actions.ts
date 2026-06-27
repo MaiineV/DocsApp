@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { getDictionary, getLocale } from '@/lib/i18n'
 import { ACTIVE_TEAM_COOKIE, activeTeamCookieOptions } from '@/lib/teams'
 
 // Acepta la invitación (POST, nunca GET → un preview/unfurl no la consume).
@@ -15,7 +16,15 @@ export async function acceptInvitation(token: string) {
   const { data, error } = await supabase.rpc('accept_invitation', { p_token: token })
 
   if (error) {
-    redirect(`/invite/${token}?error=${encodeURIComponent(error.message)}`)
+    // El RPC lanza con errcode P0003 (expirada) / P0004 (otro email) / P0002 (usada).
+    const e = getDictionary(await getLocale()).errors
+    const msg =
+      error.code === 'P0003'
+        ? e.inviteExpired
+        : error.code === 'P0004'
+          ? e.inviteWrongEmail
+          : e.inviteInvalid
+    redirect(`/invite/${token}?error=${encodeURIComponent(msg)}`)
   }
 
   const teamId = data as string | null

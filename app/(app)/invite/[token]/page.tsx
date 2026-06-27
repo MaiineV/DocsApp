@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { getDictionary, getLocale } from '@/lib/i18n'
+import { fmt } from '@/lib/i18n/format'
 import { SubmitButton } from '@/components/submit-button'
 import { acceptInvitation, switchAccount } from './actions'
 
@@ -19,6 +21,7 @@ export default async function InvitePage({
   searchParams: Promise<{ error?: string }>
 }) {
   const [{ token }, { error }] = await Promise.all([params, searchParams])
+  const t = getDictionary(await getLocale())
 
   const supabase = await createClient()
   const { data } = await supabase.rpc('invitation_preview', { p_token: token })
@@ -29,34 +32,35 @@ export default async function InvitePage({
       <div className="w-full max-w-md rounded-xl border border-black/10 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-zinc-900">
         {!preview ? (
           <DeadEnd
-            title="Invitación inválida"
-            message="Este link no es válido o la invitación ya fue utilizada."
+            title={t.invite.invalidTitle}
+            message={t.invite.invalidBody}
+            backLabel={t.common.goToDocs}
           />
         ) : preview.expired ? (
           <DeadEnd
-            title="Invitación expirada"
-            message="Pedile a quien administra el equipo que te genere una nueva."
+            title={t.invite.expiredTitle}
+            message={t.invite.expiredBody}
+            backLabel={t.common.goToDocs}
           />
         ) : !preview.email_match ? (
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Invitación para otra cuenta</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t.invite.mismatchTitle}</h1>
             <p className="mt-2 text-sm text-zinc-500">
-              Esta invitación es para <strong>{preview.masked_email}</strong>. Estás con otra cuenta:
-              iniciá sesión con la dirección correcta para aceptarla.
+              {fmt(t.invite.mismatchBody, { email: preview.masked_email })}
             </p>
             <form action={switchAccount.bind(null, token)} className="mt-6">
               <SubmitButton className="rounded-md border border-black/15 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5">
-                Cambiar de cuenta
+                {t.invite.switchAccount}
               </SubmitButton>
             </form>
           </div>
         ) : (
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Te invitaron a {preview.team_name}
+              {fmt(t.invite.invitedTitle, { team: preview.team_name })}
             </h1>
             <p className="mt-2 text-sm text-zinc-500">
-              Vas a unirte como <strong>{preview.role}</strong>.
+              {fmt(t.invite.invitedBody, { role: preview.role })}
             </p>
 
             {error ? (
@@ -67,10 +71,10 @@ export default async function InvitePage({
 
             <form action={acceptInvitation.bind(null, token)} className="mt-6 flex items-center gap-3">
               <SubmitButton className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
-                Aceptar invitación
+                {t.invite.accept}
               </SubmitButton>
               <Link href="/docs" className="text-sm text-zinc-500 hover:underline">
-                Ahora no
+                {t.invite.notNow}
               </Link>
             </form>
           </div>
@@ -80,13 +84,21 @@ export default async function InvitePage({
   )
 }
 
-function DeadEnd({ title, message }: { title: string; message: string }) {
+function DeadEnd({
+  title,
+  message,
+  backLabel,
+}: {
+  title: string
+  message: string
+  backLabel: string
+}) {
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
       <p className="mt-2 text-sm text-zinc-500">{message}</p>
       <Link href="/docs" className="mt-6 inline-block text-sm text-zinc-500 hover:underline">
-        ← Ir a mis documentos
+        {backLabel}
       </Link>
     </div>
   )

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import GoogleButton from '@/components/google-button'
 import { SubmitButton } from '@/components/submit-button'
+import { getDictionary, getLocale } from '@/lib/i18n'
 
 type AuthCardProps = {
   title: string
@@ -14,12 +15,13 @@ type AuthCardProps = {
 // Card de autenticación (login/signup). Form nativo que postea a una Server
 // Action. La validación del server es la fuente de verdad; el `required`/
 // `minLength` es solo UX. `next` viaja en un hidden para volver tras loguear.
-export function AuthCard({ title, action, submitLabel, error, footer, next }: AuthCardProps) {
+export async function AuthCard({ title, action, submitLabel, error, footer, next }: AuthCardProps) {
+  const t = getDictionary(await getLocale())
   return (
     <div className="flex flex-1 items-center justify-center p-6">
       <div className="w-full max-w-sm rounded-xl border border-black/10 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-zinc-900">
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        <p className="mt-1 text-sm text-zinc-500">DocsApp — equipo interno</p>
+        <p className="mt-1 text-sm text-zinc-500">{t.auth.tagline}</p>
 
         {error ? (
           <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
@@ -30,7 +32,7 @@ export function AuthCard({ title, action, submitLabel, error, footer, next }: Au
         <form action={action} className="mt-6 flex flex-col gap-4">
           {next ? <input type="hidden" name="next" value={next} /> : null}
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Email</span>
+            <span className="font-medium">{t.auth.email}</span>
             <input
               name="email"
               type="email"
@@ -40,7 +42,7 @@ export function AuthCard({ title, action, submitLabel, error, footer, next }: Au
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Contraseña</span>
+            <span className="font-medium">{t.auth.password}</span>
             <input
               name="password"
               type="password"
@@ -56,7 +58,8 @@ export function AuthCard({ title, action, submitLabel, error, footer, next }: Au
         </form>
 
         <div className="my-4 flex items-center gap-3 text-xs text-zinc-400">
-          <span className="h-px flex-1 bg-black/10 dark:bg-white/10" />o
+          <span className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+          {t.auth.or}
           <span className="h-px flex-1 bg-black/10 dark:bg-white/10" />
         </div>
 

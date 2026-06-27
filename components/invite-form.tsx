@@ -2,6 +2,8 @@
 
 import { useState, useTransition, type FormEvent } from 'react'
 import { createInvitation } from '@/app/(app)/teams/[id]/actions'
+import { useI18n } from '@/components/i18n-provider'
+import { fmt } from '@/lib/i18n/format'
 import type { Role } from '@/lib/types'
 
 // owner nunca se invita (lo bloquean el CHECK y la RLS).
@@ -9,6 +11,7 @@ const INVITE_ROLES: Role[] = ['viewer', 'editor', 'admin']
 const TTL_OPTIONS = [1, 7, 14, 30]
 
 export default function InviteForm({ teamId }: { teamId: string }) {
+  const { t } = useI18n()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
@@ -27,7 +30,7 @@ export default function InviteForm({ teamId }: { teamId: string }) {
     startTransition(async () => {
       const res = await createInvitation(teamId, email, role, ttl)
       if (!res.ok || !res.token) {
-        setError(res.error ?? 'No se pudo crear la invitación.')
+        setError(res.error ?? t.errors.createInviteFailed)
         return
       }
       setLink(`${window.location.origin}/invite/${res.token}`)
@@ -46,17 +49,17 @@ export default function InviteForm({ teamId }: { teamId: string }) {
     <div>
       <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2">
         <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
-          <span className="font-medium">Email</span>
+          <span className="font-medium">{t.invite.email}</span>
           <input
             name="email"
             type="email"
             required
-            placeholder="persona@empresa.com"
+            placeholder={t.invite.emailPlaceholder}
             className="rounded-md border border-black/15 bg-transparent px-3 py-2 outline-none focus:border-black/40 dark:border-white/15"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Rol</span>
+          <span className="font-medium">{t.invite.role}</span>
           <select
             name="role"
             defaultValue="editor"
@@ -70,7 +73,7 @@ export default function InviteForm({ teamId }: { teamId: string }) {
           </select>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Expira</span>
+          <span className="font-medium">{t.invite.expires}</span>
           <select
             name="ttl"
             defaultValue="7"
@@ -78,7 +81,7 @@ export default function InviteForm({ teamId }: { teamId: string }) {
           >
             {TTL_OPTIONS.map((d) => (
               <option key={d} value={d}>
-                {d} {d === 1 ? 'día' : 'días'}
+                {d === 1 ? t.invite.day : fmt(t.invite.days, { n: d })}
               </option>
             ))}
           </select>
@@ -88,7 +91,7 @@ export default function InviteForm({ teamId }: { teamId: string }) {
           disabled={isPending}
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
-          {isPending ? 'Creando…' : 'Invitar'}
+          {isPending ? t.invite.creating : t.invite.submit}
         </button>
       </form>
 
@@ -100,7 +103,7 @@ export default function InviteForm({ teamId }: { teamId: string }) {
 
       {link ? (
         <div className="mt-3 rounded-md border border-black/10 bg-zinc-50 p-3 dark:border-white/10 dark:bg-zinc-800/50">
-          <p className="text-xs font-medium text-zinc-500">Link de invitación (compartilo):</p>
+          <p className="text-xs font-medium text-zinc-500">{t.invite.linkLabel}</p>
           <div className="mt-1 flex items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded bg-black/5 px-2 py-1 text-xs dark:bg-white/10">
               {link}
@@ -110,7 +113,7 @@ export default function InviteForm({ teamId }: { teamId: string }) {
               onClick={copy}
               className="shrink-0 rounded-md border border-black/15 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5"
             >
-              {copied ? '¡Copiado!' : 'Copiar'}
+              {copied ? t.common.copied : t.common.copy}
             </button>
           </div>
         </div>

@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { revokeInvitation } from '@/app/(app)/teams/[id]/actions'
+import { useI18n } from '@/components/i18n-provider'
+import { fmt } from '@/lib/i18n/format'
 import type { Invitation } from '@/lib/types'
 
 export default function PendingInvites({
@@ -11,12 +13,13 @@ export default function PendingInvites({
   teamId: string
   invites: Invitation[]
 }) {
+  const { t, locale } = useI18n()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   if (invites.length === 0) {
-    return <p className="text-sm text-zinc-400">No hay invitaciones pendientes.</p>
+    return <p className="text-sm text-zinc-400">{t.invite.noPending}</p>
   }
 
   async function copy(id: string, token: string) {
@@ -29,7 +32,7 @@ export default function PendingInvites({
     setError(null)
     startTransition(async () => {
       const res = await revokeInvitation(teamId, id)
-      if (!res.ok) setError(res.error ?? 'No se pudo revocar.')
+      if (!res.ok) setError(res.error ?? t.errors.revokeFailed)
     })
   }
 
@@ -48,7 +51,10 @@ export default function PendingInvites({
               <div className="min-w-0">
                 <span className="truncate font-medium">{inv.email}</span>
                 <span className="ml-2 text-xs text-zinc-400">
-                  {inv.role} · expira {new Date(inv.expires_at).toLocaleDateString()}
+                  {inv.role} ·{' '}
+                  {fmt(t.invite.expiresOn, {
+                    date: new Date(inv.expires_at).toLocaleDateString(locale),
+                  })}
                 </span>
               </div>
               <div className="flex shrink-0 items-center gap-2">

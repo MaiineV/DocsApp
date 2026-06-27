@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveTeam, getMyTeams } from '@/lib/teams'
+import { getDictionary, getLocale } from '@/lib/i18n'
 import { signOut } from '@/app/login/actions'
 import TeamSwitcher from '@/components/team-switcher'
 import { SubmitButton } from '@/components/submit-button'
@@ -22,6 +23,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   if (!user) redirect('/login')
 
+  const t = getDictionary(await getLocale())
+
   return (
     <div className="flex min-h-full flex-col">
       <header className="flex items-center justify-between border-b border-black/10 px-6 py-3 dark:border-white/10">
@@ -37,7 +40,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
               href={`/teams/${active.id}`}
               className="rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-100"
             >
-              Manage Team
+              {t.header.manageTeam}
             </Link>
           ) : null}
         </div>
@@ -45,7 +48,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <span className="hidden text-zinc-500 sm:inline">{user.email}</span>
           <form action={signOut}>
             <SubmitButton className="rounded-md border border-black/15 px-3 py-1.5 font-medium transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5">
-              Salir
+              {t.header.signOut}
             </SubmitButton>
           </form>
         </div>

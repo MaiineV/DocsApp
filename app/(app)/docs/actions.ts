@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveTeam } from '@/lib/teams'
+import { getDictionary, getLocale } from '@/lib/i18n'
 import { casMergeYdoc } from '@/lib/yjs/persist'
 
 // Crea un documento vacío en el team activo y abre el editor.
@@ -18,14 +19,16 @@ export async function createDocument() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // title vacío → la UI muestra el "Sin título"/"Untitled" localizado.
   const { data, error } = await supabase
     .from('documents')
-    .insert({ team_id: team.id, created_by: user.id, title: 'Untitled' })
+    .insert({ team_id: team.id, created_by: user.id, title: '' })
     .select('id')
     .single()
 
   if (error || !data) {
-    redirect(`/docs?error=${encodeURIComponent(error?.message ?? 'No se pudo crear el documento')}`)
+    const msg = error?.message ?? getDictionary(await getLocale()).errors.docCreateFailed
+    redirect(`/docs?error=${encodeURIComponent(msg)}`)
   }
 
   revalidatePath('/docs')
@@ -56,7 +59,7 @@ export async function persistTitle(
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('documents')
-    .update({ title: title.trim() || 'Untitled' })
+    .update({ title: title.trim() })
     .eq('id', id)
     .select('id')
 

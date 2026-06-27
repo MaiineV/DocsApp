@@ -142,5 +142,19 @@ export const en: Dictionary = {
     inviteInvalid: 'Invalid or already used invitation',
     inviteExpired: 'The invitation expired',
     inviteWrongEmail: 'This invitation is for a different email address',
+    noRenamePermission: 'You don’t have permission to rename the team.',
+    noDeletePermission: 'Only the owner can delete the team.',
+  },
+  teamSettings: {
+    section: 'Team name',
+    save: 'Save',
+    saved: 'Name updated',
+    dangerTitle: 'Danger zone',
+    dangerDesc:
+      'Deleting the team removes all its documents, members and invitations. This cannot be undone.',
+    delete: 'Delete team',
+    confirm: 'Are you sure? This deletes everything.',
+    confirmDelete: 'Yes, delete',
+    cancel: 'Cancel',
   },
 }

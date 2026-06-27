@@ -142,6 +142,20 @@ export const es = {
     inviteInvalid: 'Invitación inválida o ya utilizada',
     inviteExpired: 'La invitación expiró',
     inviteWrongEmail: 'Esta invitación es para otra dirección de email',
+    noRenamePermission: 'No tenés permiso para renombrar el equipo.',
+    noDeletePermission: 'Solo el owner puede borrar el equipo.',
+  },
+  teamSettings: {
+    section: 'Nombre del equipo',
+    save: 'Guardar',
+    saved: 'Nombre actualizado',
+    dangerTitle: 'Zona de peligro',
+    dangerDesc:
+      'Borrar el equipo elimina todos sus documentos, miembros e invitaciones. No se puede deshacer.',
+    delete: 'Borrar equipo',
+    confirm: '¿Seguro? Esto borra todo.',
+    confirmDelete: 'Sí, borrar',
+    cancel: 'Cancelar',
   },
 }
 

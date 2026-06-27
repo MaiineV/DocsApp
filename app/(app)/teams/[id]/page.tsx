@@ -7,6 +7,7 @@ import { fmt } from '@/lib/i18n/format'
 import MembersList from '@/components/members-list'
 import InviteForm from '@/components/invite-form'
 import PendingInvites from '@/components/pending-invites'
+import TeamSettings from '@/components/team-settings'
 import type { Invitation, Role, TeamMember } from '@/lib/types'
 
 const RANK: Record<Role, number> = { viewer: 10, editor: 20, admin: 30, owner: 40 }
@@ -86,6 +87,13 @@ export default async function TeamMembersPage({ params }: { params: Promise<{ id
           />
         </div>
       </section>
+
+      <TeamSettings
+        teamId={id}
+        currentName={team.name}
+        canRename={canManage}
+        canDelete={team.role === 'owner'}
+      />
     </div>
   )
 }

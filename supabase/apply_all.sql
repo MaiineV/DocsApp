@@ -258,6 +258,11 @@ as $$
 declare
   v_team uuid := coalesce(old.team_id, new.team_id);
 begin
+  -- El team ya se borró (cascade): permitir la baja de su membership owner.
+  if not exists (select 1 from public.teams where id = v_team) then
+    return coalesce(new, old);
+  end if;
+
   if (tg_op = 'DELETE' and old.role = 'owner')
      or (tg_op = 'UPDATE' and old.role = 'owner' and new.role <> 'owner') then
     if (select count(*) from public.memberships

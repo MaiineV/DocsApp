@@ -2,7 +2,10 @@
 
 import { randomBytes } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { ACTIVE_TEAM_COOKIE } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import type { Role } from '@/lib/types'
 
@@ -60,6 +63,47 @@ export async function createInvitation(
 
   revalidatePath(`/teams/${teamId}`)
   return { ok: true, token: (data[0] as { token: string }).token }
+}
+
+// Renombra el team. RLS `teams_update` exige admin+: si no, el UPDATE afecta 0 filas.
+export async function renameTeam(teamId: string, name: string): Promise<Result> {
+  const t = getDictionary(await getLocale())
+  const trimmed = name.trim()
+  if (!trimmed) return { ok: false, error: t.errors.teamNameRequired }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('teams')
+    .update({ name: trimmed.slice(0, 80) })
+    .eq('id', teamId)
+    .select('id')
+
+  if (error) return { ok: false, error: error.message }
+  if (!data || data.length === 0) return { ok: false, error: t.errors.noRenamePermission }
+
+  revalidatePath(`/teams/${teamId}`)
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+// Borra el team. RLS `teams_delete` exige OWNER. El FK on delete cascade borra
+// documents/memberships/invitations; el trigger del último owner no bloquea el
+// cascade (ve que el team ya no existe). Limpia la cookie de team activo y redirige.
+export async function deleteTeam(teamId: string): Promise<Result> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('teams').delete().eq('id', teamId).select('id')
+
+  if (error) return { ok: false, error: error.message }
+  if (!data || data.length === 0) {
+    return { ok: false, error: getDictionary(await getLocale()).errors.noDeletePermission }
+  }
+
+  const cookieStore = await cookies()
+  if (cookieStore.get(ACTIVE_TEAM_COOKIE)?.value === teamId) {
+    cookieStore.delete(ACTIVE_TEAM_COOKIE)
+  }
+  revalidatePath('/', 'layout')
+  redirect('/docs')
 }
 
 // Revoca (borra) una invitación pendiente. RLS: admin+ del team.

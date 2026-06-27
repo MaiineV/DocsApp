@@ -7,6 +7,7 @@ import '@blocknote/mantine/style.css'
 import { Y, BLOCKNOTE_FRAGMENT } from '@/lib/yjs/yjs'
 import { base64ToUpdate, updateToBase64 } from '@/lib/yjs/encoding'
 import { parseInitialContent, seedUpdateFromBlocks } from '@/lib/blocknote'
+import { schema } from '@/lib/blocknote-schema'
 import { SupabaseYjsProvider } from '@/lib/yjs/supabase-provider'
 import { createClient } from '@/lib/supabase/client'
 import { persistYdoc } from '@/app/(app)/docs/actions'
@@ -61,6 +62,7 @@ export default function BlocknoteCollabCanvas({
   // 3) Editor colaborativo. SIN initialContent: el contenido vive en el fragment
   //    (pasarlo además lo duplicaría).
   const editor = useCreateBlockNote({
+    schema,
     collaboration: { fragment, user, provider: { awareness: provider.awareness } },
   })
 

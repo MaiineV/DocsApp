@@ -1,6 +1,7 @@
 import { BlockNoteEditor, type PartialBlock } from '@blocknote/core'
 import { blocksToYXmlFragment } from '@blocknote/core/yjs'
 import { Y, BLOCKNOTE_FRAGMENT } from '@/lib/yjs/yjs'
+import { schema } from '@/lib/blocknote-schema'
 
 // Convierte el `content` guardado (string en la columna documents.content) al
 // formato que espera BlockNote como contenido inicial.
@@ -41,7 +42,9 @@ export function parseInitialContent(content: string): PartialBlock[] | undefined
 // distintos y aparecería dos veces. El editor headless solo normaliza
 // PartialBlock[] → Block[] (necesita un schema, no toca el DOM).
 export function seedUpdateFromBlocks(blocks: PartialBlock[]): Uint8Array {
-  const tmp = BlockNoteEditor.create({ initialContent: blocks })
+  // Mismo `schema` superset que el editor vivo → structs Yjs consistentes. El
+  // contenido legacy nunca tiene docref, así que serializa igual que con el default.
+  const tmp = BlockNoteEditor.create({ schema, initialContent: blocks as never })
   const seedDoc = new Y.Doc()
   seedDoc.clientID = 0
   blocksToYXmlFragment(tmp, tmp.document, seedDoc.getXmlFragment(BLOCKNOTE_FRAGMENT))

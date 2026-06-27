@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { changeMemberRole, removeMember } from '@/app/(app)/teams/[id]/actions'
 import { useI18n } from '@/components/i18n-provider'
 import { fmt } from '@/lib/i18n/format'
+import { displayName } from '@/lib/collab'
+import Avatar from '@/components/avatar'
 import type { Role, TeamMember } from '@/lib/types'
 
 const ALL_ROLES: Role[] = ['viewer', 'editor', 'admin', 'owner']
@@ -71,13 +73,19 @@ export default function MembersList({
 
           return (
             <li key={m.user_id} className="flex items-center justify-between gap-3 py-3">
-              <div className="min-w-0">
-                <span className="truncate font-medium">{m.email}</span>
-                {self ? (
-                  <span className="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800">
-                    {t.members.you}
-                  </span>
-                ) : null}
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar src={m.avatar_url} name={displayName(m.nickname, m.email)} seed={m.user_id} size={32} />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">{displayName(m.nickname, m.email)}</span>
+                    {self ? (
+                      <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800">
+                        {t.members.you}
+                      </span>
+                    ) : null}
+                  </div>
+                  <span className="block truncate text-xs text-zinc-400">{m.email}</span>
+                </div>
               </div>
 
               <div className="flex shrink-0 items-center gap-2">

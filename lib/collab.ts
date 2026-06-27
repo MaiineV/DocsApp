@@ -14,6 +14,24 @@ export function cursorColor(seed: string): string {
   return `hsl(${hue}, 68%, 55%)`
 }
 
+// Nombre visible: nick → prefijo del mail → 'Anónimo'. Puro (sin server/client
+// imports) → lo usan header, members-list y la presencia.
+export function displayName(
+  nickname: string | null | undefined,
+  email: string | null | undefined,
+): string {
+  return nickname?.trim() || email?.split('@')[0]?.trim() || 'Anónimo'
+}
+
+// Identidad de presencia a partir del perfil (nick) con fallback al email.
+export function collabUserFromProfile(
+  nickname: string | null | undefined,
+  email: string | null | undefined,
+  id: string,
+): CollabUser {
+  return { name: displayName(nickname, email), color: cursorColor(id || email || '') }
+}
+
 // Nombre visible del colaborador a partir del email (parte antes del @).
 export function collabUserFromEmail(email: string | null | undefined, id: string): CollabUser {
   const name = email?.split('@')[0]?.trim() || 'Anónimo'

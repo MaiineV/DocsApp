@@ -157,6 +157,23 @@ export const es = {
     confirmDelete: 'Sí, borrar',
     cancel: 'Cancelar',
   },
+  profile: {
+    title: 'Tu perfil',
+    photo: 'Foto',
+    changePhoto: 'Cambiar foto',
+    uploading: 'Subiendo…',
+    avatarType: 'El archivo debe ser una imagen.',
+    avatarTooBig: 'La imagen supera los 2 MB.',
+    nickname: 'Nickname',
+    save: 'Guardar',
+    saved: 'Guardado',
+    password: 'Contraseña',
+    newPassword: 'Nueva contraseña',
+    changePassword: 'Cambiar',
+    passwordChanged: 'Contraseña actualizada',
+    passwordTooShort: 'La contraseña debe tener al menos 6 caracteres.',
+    googleAccount: 'Iniciás sesión con Google — la contraseña la maneja Google.',
+  },
 }
 
 export type Dictionary = typeof es

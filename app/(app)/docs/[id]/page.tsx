@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getMyTeams } from '@/lib/teams'
 import { getDocument, listTeamDocs } from '@/lib/documents'
+import { getMyProfile } from '@/lib/profile'
 import { getDictionary, getLocale } from '@/lib/i18n'
-import { collabUserFromEmail } from '@/lib/collab'
+import { collabUserFromProfile } from '@/lib/collab'
 import { SubmitButton } from '@/components/submit-button'
 import { deleteDocument } from '../actions'
 import CollabDocEditor from '@/components/collab-doc-editor'
@@ -13,9 +14,10 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
   const { id } = await params
 
   const supabase = await createClient()
-  const [doc, { data: { user } }] = await Promise.all([
+  const [doc, { data: { user } }, profile] = await Promise.all([
     getDocument(id), // cacheado → reusa el fetch del layout
     supabase.auth.getUser(),
+    getMyProfile(),
   ])
 
   if (!doc) notFound()
@@ -30,7 +32,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
   // Otros docs del team para el menú de @menciones (sin el actual).
   const teamDocs = allDocs.filter((d) => d.id !== id).map((d) => ({ id: d.id, title: d.title }))
 
-  const collabUser = collabUserFromEmail(user?.email, user?.id ?? '')
+  const collabUser = collabUserFromProfile(profile?.nickname, user?.email, user?.id ?? '')
   const t = getDictionary(await getLocale())
 
   const del = deleteDocument.bind(null, doc.id)

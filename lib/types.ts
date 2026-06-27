@@ -31,11 +31,20 @@ export type Document = {
   updated_at: string
 }
 
-// Miembro de un team con su email (lo devuelve la RPC list_team_members).
+// Miembro de un team (lo devuelve la RPC list_team_members): email + perfil.
 export type TeamMember = {
   user_id: string
   email: string
   role: Role
+  nickname: string | null
+  avatar_url: string | null
+}
+
+// Perfil de usuario (Fase 6): nick + avatar.
+export type Profile = {
+  id: string
+  nickname: string | null
+  avatar_url: string | null
 }
 
 // Invitación pendiente (Fase 3).

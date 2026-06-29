@@ -8,8 +8,11 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Corre en todo menos assets estáticos.
+  // Corre en todo menos assets estáticos y la API. `/api/**` se excluye porque se
+  // autentica por `Authorization: Bearer <jwt>` (no cookies); sin esto el proxy
+  // redirigiría las requests sin cookie a /login (302) en vez de dejarlas llegar
+  // al route handler, que valida el token y aplica la RLS por su cuenta.
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

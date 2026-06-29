@@ -19,6 +19,9 @@ realtime vendor), and token-based team invitations.
   **Yjs (CRDT) over Supabase Realtime** — no Liveblocks / PartyKit / dedicated WebSocket server.
 - 📨 **Team management** — invite by email (token link), accept flow, role management (owner / admin /
   editor / viewer), and a multi-team switcher.
+- 🔌 **REST API** — `/api/v1` for local projects: CRUD documents across your teams with a Bearer token,
+  read/write **Markdown** or JSON, and edits that broadcast **live** to open editors. See
+  [`docs/API.md`](docs/API.md).
 
 ## Architecture highlights
 
@@ -53,6 +56,18 @@ Admins create an invitation (email + role + expiry) and get a copyable link. The
 paths go through `SECURITY DEFINER` RPCs (the `invitations` table itself is admin-only), so there's no
 email enumeration and `auth.users` is never exposed. Accepting is idempotent, single-use, and never
 grants `owner`. `?next` is preserved through login/signup and sanitized against open-redirects.
+
+### REST API for local tooling
+A versioned REST API (`/api/v1`) lets an external project operate your docs programmatically, authenticated
+with the **same account and RLS** as the web app — an `Authorization: Bearer <jwt>` header is forwarded to
+PostgREST, so team roles gate every call (no parallel authorization logic). Highlights:
+- **Markdown as the API format, Yjs as the source of truth.** Reads derive Markdown from the blocks; writes
+  parse Markdown → blocks and merge a **Yjs delta** into the document's CRDT through the same CAS+merge path
+  as the editor — real-time collaboration is never bypassed.
+- **Live edits** — an API write broadcasts its Yjs update on the document's Realtime channel, so anyone with
+  the doc open sees it apply **without reloading**.
+- Endpoints: `GET /teams`, `GET·POST /teams/{teamId}/documents`, `GET·PATCH·DELETE /documents/{id}`
+  (`?format=markdown|json`). Full reference + example client in [`docs/API.md`](docs/API.md).
 
 ## Tech stack
 
@@ -101,13 +116,16 @@ grants `owner`. `?next` is preserved through login/signup and sanitized against 
 ```
 app/                 # routes (App Router)
   (app)/             # authenticated area: docs, teams, invite, layout
+  api/v1/            # public REST API (Bearer auth): teams, documents
   auth/callback/     # OAuth / email-confirmation PKCE callback
   login, signup/     # auth pages
 components/          # client components (editor, members, invites, switcher…)
 lib/
-  supabase/          # browser/server/proxy Supabase clients
+  supabase/          # browser/server/proxy/api Supabase clients
   yjs/               # Yjs provider, encoding, CAS persistence
+  api/               # REST API: auth, responses, markdown<->blocks, doc-body, broadcast
   teams.ts, auth/    # team helpers, safe-redirect
+scripts/             # example API clients (api-smoke, api-patch)
 supabase/
   migrations/        # incremental SQL migrations
   apply_all.sql      # combined schema (apply once on a fresh project)
@@ -117,5 +135,6 @@ proxy.ts             # Next.js 16 middleware (session refresh + route guard)
 ## Status
 
 Built in phases: **0** auth + multi-tenant + RLS · **1** rich-text editor · **2** real-time
-collaboration (Yjs over Supabase Realtime) · **3** teams + invitations · **+** Google OAuth. Core is
-feature-complete; deployed on Vercel against Supabase.
+collaboration (Yjs over Supabase Realtime) · **3** teams + invitations · **+** Google OAuth · **6** user
+profiles · **7** REST API (`/api/v1`, Bearer auth, Markdown, live edits). Core is feature-complete;
+deployed on Vercel against Supabase.

@@ -109,7 +109,28 @@ PostgREST, so team roles gate every call (no parallel authorization logic). High
    ```
    Open http://localhost:3000.
 
-**Scripts:** `npm run dev` · `npm run build` · `npm run lint`.
+**Scripts:** `npm run dev` · `npm run build` · `npm run lint` · `npm test` · `npm run test:e2e`.
+
+## Testing
+
+Two layers:
+
+- **Unit / integration — [Vitest](https://vitest.dev):** pure logic with no external infra, runs in CI.
+  Covers the open-redirect sanitizer (`safeNext`), the document tree builder (`buildDocTree` /
+  `collectDescendantIds`), i18n interpolation (`fmt`), the Yjs base64 encoding + CRDT merge
+  (commutative / idempotent), and the API's Markdown ↔ blocks round-trip (jsdom).
+  ```bash
+  npm test          # run once
+  npm run test:watch
+  ```
+- **End-to-end — [Playwright](https://playwright.dev):** critical flows in a real browser against the dev
+  server. Covers login → create document → title persists across reload → delete, and the dark-mode toggle
+  (`data-theme` changes and persists). Needs a test account — copy `.env.test.example` to `.env.test` and
+  fill it in:
+  ```bash
+  npx playwright install chromium   # once
+  npm run test:e2e
+  ```
 
 ## Project structure
 
@@ -126,6 +147,8 @@ lib/
   api/               # REST API: auth, responses, markdown<->blocks, doc-body, broadcast
   teams.ts, auth/    # team helpers, safe-redirect
 scripts/             # example API clients (api-smoke, api-patch)
+tests/unit/          # Vitest unit/integration tests
+e2e/                 # Playwright end-to-end tests
 supabase/
   migrations/        # incremental SQL migrations
   apply_all.sql      # combined schema (apply once on a fresh project)

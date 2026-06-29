@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getActiveTeam } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { casMergeYdoc } from '@/lib/yjs/persist'
+import type { SearchResult } from '@/lib/types'
 
 // Crea un documento vacío y abre el editor. Si `parentId` viene, el doc es hijo
 // de ese (y hereda su team — el trigger exige mismo team); si no, va al team
@@ -145,4 +146,45 @@ export async function deleteDocument(id: string) {
 
   revalidatePath('/docs', 'layout')
   redirect('/docs')
+}
+
+// Búsqueda full-text de documentos visibles. La RLS de `documents` ya limita a los
+// equipos donde sos miembro → la búsqueda es multi-equipo y segura sin filtros
+// extra. Combina FTS sobre `search_text` (título+contenido, índice GIN) con un
+// ILIKE de título (cubre prefijos "as you type" que websearch no matchea).
+// Dedupe por id, top 20. Se llama desde el cliente (debounced).
+export async function searchDocuments(rawQuery: string): Promise<SearchResult[]> {
+  const q = rawQuery.trim()
+  if (q.length < 2) return []
+
+  const supabase = await createClient()
+  const fields = 'id, title, teams(name), updated_at'
+
+  const [fts, byTitle] = await Promise.all([
+    supabase
+      .from('documents')
+      .select(fields)
+      .textSearch('search_text', q, { type: 'websearch', config: 'simple' })
+      .order('updated_at', { ascending: false })
+      .limit(20),
+    supabase
+      .from('documents')
+      .select(fields)
+      .ilike('title', `%${q}%`)
+      .order('updated_at', { ascending: false })
+      .limit(20),
+  ])
+
+  type Row = { id: string; title: string; teams: { name: string } | null }
+  const seen = new Set<string>()
+  const out: SearchResult[] = []
+  for (const row of [
+    ...((fts.data ?? []) as unknown as Row[]),
+    ...((byTitle.data ?? []) as unknown as Row[]),
+  ]) {
+    if (seen.has(row.id) || out.length >= 20) continue
+    seen.add(row.id)
+    out.push({ id: row.id, title: row.title, team: row.teams?.name ?? '' })
+  }
+  return out
 }

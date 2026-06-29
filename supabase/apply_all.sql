@@ -741,3 +741,49 @@ $$;
 create trigger documents_enforce_parent
   before insert or update of parent_id, team_id on public.documents
   for each row execute function private.enforce_document_parent();
+
+-- ===========================================================================
+-- Búsqueda full-text de documentos (título + contenido) — 20260701120000
+-- ===========================================================================
+
+alter table public.documents add column if not exists search_text text;
+
+create or replace function private.doc_search_text(p_title text, p_content text)
+returns text
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  extracted text;
+begin
+  begin
+    select string_agg(t.value #>> '{}', ' ')
+      into extracted
+      from jsonb_path_query(p_content::jsonb, '$.**.text') as t(value);
+  exception when others then
+    extracted := p_content;
+  end;
+  return btrim(coalesce(p_title, '') || ' ' || coalesce(extracted, ''));
+end;
+$$;
+
+create or replace function private.documents_set_search_text()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.search_text := private.doc_search_text(new.title, new.content);
+  return new;
+end;
+$$;
+
+drop trigger if exists documents_set_search_text on public.documents;
+create trigger documents_set_search_text
+  before insert or update of title, content on public.documents
+  for each row execute function private.documents_set_search_text();
+
+create index if not exists documents_search_idx
+  on public.documents
+  using gin (to_tsvector('simple', search_text));

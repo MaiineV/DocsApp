@@ -19,6 +19,12 @@ export const es = {
     dark: 'Oscuro',
     system: 'Sistema',
   },
+  search: {
+    label: 'Buscar',
+    placeholder: 'Buscar documentos…',
+    searching: 'Buscando…',
+    noResults: 'Sin resultados',
+  },
   sidebar: {
     pages: 'Páginas',
     newPage: 'Nueva página',

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import NewDocButton from '@/components/new-doc-button'
+import DocSearch from '@/components/doc-search'
 import { buildDocTree, type DocNode } from '@/lib/doc-tree'
 import { useI18n } from '@/components/i18n-provider'
 
@@ -64,6 +65,9 @@ export default function DocSidebar({
         ].join(' ')}
       >
         <div className="flex h-full w-64 flex-col overflow-y-auto p-2">
+          <div className="mb-1 hidden px-1 sm:block">
+            <DocSearch variant="inline" />
+          </div>
           <div className="flex items-center justify-between px-1 py-1">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-subtle">
               {t.sidebar.pages}

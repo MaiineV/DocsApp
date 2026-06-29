@@ -19,6 +19,12 @@ export const en: Dictionary = {
     dark: 'Dark',
     system: 'System',
   },
+  search: {
+    label: 'Search',
+    placeholder: 'Search documents…',
+    searching: 'Searching…',
+    noResults: 'No results',
+  },
   sidebar: {
     pages: 'Pages',
     newPage: 'New page',

@@ -47,6 +47,9 @@ export type Profile = {
   avatar_url: string | null
 }
 
+// Resultado de búsqueda de documentos (Fase 10).
+export type SearchResult = { id: string; title: string; team: string }
+
 // Invitación pendiente (Fase 3).
 export type Invitation = {
   id: string

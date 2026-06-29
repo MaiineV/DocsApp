@@ -10,6 +10,7 @@ import { signOut } from '@/app/login/actions'
 import TeamSwitcher from '@/components/team-switcher'
 import Avatar from '@/components/avatar'
 import ThemeToggle from '@/components/theme-toggle'
+import HeaderSearch from '@/components/header-search'
 import { SubmitButton } from '@/components/submit-button'
 
 // Shell del área autenticada. El proxy ya redirige a /login si no hay sesión;
@@ -51,6 +52,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
+          <HeaderSearch />
           <ThemeToggle />
           <Link
             href="/profile"

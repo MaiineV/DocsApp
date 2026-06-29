@@ -13,6 +13,12 @@ export const es = {
     copied: '¡Copiado!',
     untitled: 'Sin título',
   },
+  theme: {
+    label: 'Tema',
+    light: 'Claro',
+    dark: 'Oscuro',
+    system: 'Sistema',
+  },
   sidebar: {
     pages: 'Páginas',
     newPage: 'Nueva página',

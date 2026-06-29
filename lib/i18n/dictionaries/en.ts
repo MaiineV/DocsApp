@@ -13,6 +13,12 @@ export const en: Dictionary = {
     copied: 'Copied!',
     untitled: 'Untitled',
   },
+  theme: {
+    label: 'Theme',
+    light: 'Light',
+    dark: 'Dark',
+    system: 'System',
+  },
   sidebar: {
     pages: 'Pages',
     newPage: 'New page',

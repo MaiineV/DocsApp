@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { revokeInvitation } from '@/app/(app)/teams/[id]/actions'
 import { useI18n } from '@/components/i18n-provider'
 import { fmt } from '@/lib/i18n/format'
+import { Alert } from '@/components/ui/alert'
+import { buttonClasses } from '@/components/ui/button'
 import type { Invitation } from '@/lib/types'
 
 export default function PendingInvites({
@@ -19,7 +21,7 @@ export default function PendingInvites({
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   if (invites.length === 0) {
-    return <p className="text-sm text-zinc-400">{t.invite.noPending}</p>
+    return <p className="text-sm text-muted">{t.invite.noPending}</p>
   }
 
   async function copy(id: string, token: string) {
@@ -39,18 +41,18 @@ export default function PendingInvites({
   return (
     <div>
       {error ? (
-        <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <Alert variant="danger" className="mb-3">
           {error}
-        </p>
+        </Alert>
       ) : null}
 
-      <ul className="divide-y divide-black/10 dark:divide-white/10">
+      <ul className="divide-y divide-border">
         {invites.map((inv) => {
           return (
             <li key={inv.id} className="flex items-center justify-between gap-3 py-3">
               <div className="min-w-0">
                 <span className="truncate font-medium">{inv.email}</span>
-                <span className="ml-2 text-xs text-zinc-400">
+                <span className="ml-2 text-xs text-muted">
                   {inv.role} ·{' '}
                   {fmt(t.invite.expiresOn, {
                     date: new Date(inv.expires_at).toLocaleDateString(locale),
@@ -61,17 +63,17 @@ export default function PendingInvites({
                 <button
                   type="button"
                   onClick={() => copy(inv.id, inv.token)}
-                  className="rounded-md border border-black/15 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5"
+                  className={buttonClasses('secondary', 'sm')}
                 >
-                  {copiedId === inv.id ? '¡Copiado!' : 'Copiar link'}
+                  {copiedId === inv.id ? t.common.copied : t.invite.copyLink}
                 </button>
                 <button
                   type="button"
                   onClick={() => revoke(inv.id)}
                   disabled={isPending}
-                  className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:hover:bg-red-950"
+                  className={buttonClasses('danger', 'sm')}
                 >
-                  Revocar
+                  {t.invite.revoke}
                 </button>
               </div>
             </li>

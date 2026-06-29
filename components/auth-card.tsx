@@ -2,6 +2,10 @@ import type { ReactNode } from 'react'
 import GoogleButton from '@/components/google-button'
 import { SubmitButton } from '@/components/submit-button'
 import { getDictionary, getLocale } from '@/lib/i18n'
+import { Card } from '@/components/ui/card'
+import { Alert } from '@/components/ui/alert'
+import { Input, Field } from '@/components/ui/input'
+import { buttonClasses } from '@/components/ui/button'
 
 type AuthCardProps = {
   title: string
@@ -19,54 +23,51 @@ export async function AuthCard({ title, action, submitLabel, error, footer, next
   const t = getDictionary(await getLocale())
   return (
     <div className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-xl border border-black/10 bg-white p-8 shadow-sm dark:border-white/10 dark:bg-zinc-900">
+      <Card className="w-full max-w-sm">
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        <p className="mt-1 text-sm text-zinc-500">{t.auth.tagline}</p>
+        <p className="mt-1 text-sm text-muted">{t.auth.tagline}</p>
 
         {error ? (
-          <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+          <Alert variant="danger" className="mt-4">
             {error}
-          </p>
+          </Alert>
         ) : null}
 
         <form action={action} className="mt-6 flex flex-col gap-4">
           {next ? <input type="hidden" name="next" value={next} /> : null}
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">{t.auth.email}</span>
-            <input
+          <Field label={t.auth.email}>
+            <Input
               name="email"
               type="email"
               required
               autoComplete="email"
-              className="rounded-md border border-black/15 bg-transparent px-3 py-2 outline-none focus:border-black/40 dark:border-white/15"
+              autoFocus
             />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">{t.auth.password}</span>
-            <input
+          </Field>
+          <Field label={t.auth.password}>
+            <Input
               name="password"
               type="password"
               required
               minLength={6}
               autoComplete="current-password"
-              className="rounded-md border border-black/15 bg-transparent px-3 py-2 outline-none focus:border-black/40 dark:border-white/15"
             />
-          </label>
-          <SubmitButton className="mt-2 rounded-md bg-zinc-900 px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+          </Field>
+          <SubmitButton className={buttonClasses('primary', 'md', 'mt-2 w-full')}>
             {submitLabel}
           </SubmitButton>
         </form>
 
-        <div className="my-4 flex items-center gap-3 text-xs text-zinc-400">
-          <span className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+        <div className="my-4 flex items-center gap-3 text-xs text-muted">
+          <span className="h-px flex-1 bg-border" />
           {t.auth.or}
-          <span className="h-px flex-1 bg-black/10 dark:bg-white/10" />
+          <span className="h-px flex-1 bg-border" />
         </div>
 
         <GoogleButton next={next} />
 
-        <div className="mt-4 text-center text-sm text-zinc-500">{footer}</div>
-      </div>
+        <div className="mt-4 text-center text-sm text-muted">{footer}</div>
+      </Card>
     </div>
   )
 }

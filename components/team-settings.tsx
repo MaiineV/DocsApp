@@ -3,6 +3,8 @@
 import { useState, useTransition, type FormEvent } from 'react'
 import { renameTeam, deleteTeam } from '@/app/(app)/teams/[id]/actions'
 import { useI18n } from '@/components/i18n-provider'
+import { Alert } from '@/components/ui/alert'
+import { buttonClasses } from '@/components/ui/button'
 
 export default function TeamSettings({
   teamId,
@@ -55,7 +57,7 @@ export default function TeamSettings({
     <section className="mt-10">
       {canRename ? (
         <>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
             {t.teamSettings.section}
           </h2>
           <form onSubmit={onRename} className="mt-3 flex gap-2">
@@ -66,45 +68,49 @@ export default function TeamSettings({
                 setSaved(false)
               }}
               maxLength={80}
-              className="flex-1 rounded-md border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:focus:border-white/40"
+              className="flex-1 rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-border"
             />
             <button
               type="submit"
               disabled={!canSave}
-              className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-40 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className={buttonClasses('primary')}
             >
               {renaming ? '…' : t.teamSettings.save}
             </button>
           </form>
           {saved ? (
-            <p className="mt-2 text-xs text-green-600 dark:text-green-400">{t.teamSettings.saved}</p>
+            <p className="mt-2 text-xs text-success">{t.teamSettings.saved}</p>
           ) : null}
-          {renameError ? <p className="mt-2 text-xs text-red-600">{renameError}</p> : null}
+          {renameError ? (
+            <Alert variant="danger" className="mt-2">
+              {renameError}
+            </Alert>
+          ) : null}
         </>
       ) : null}
 
       {canDelete ? (
-        <div className="mt-8 rounded-lg border border-red-200 p-4 dark:border-red-900/50">
-          <h3 className="text-sm font-medium text-red-700 dark:text-red-400">
+        <div className="mt-8 rounded-lg border border-danger-border p-4">
+          <h3 className="text-sm font-medium text-danger-fg">
             {t.teamSettings.dangerTitle}
           </h3>
-          <p className="mt-1 text-xs text-zinc-500">{t.teamSettings.dangerDesc}</p>
+          <p className="mt-1 text-xs text-muted">{t.teamSettings.dangerDesc}</p>
           {!confirming ? (
             <button
               type="button"
               onClick={() => setConfirming(true)}
-              className="mt-3 rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950"
+              className={buttonClasses('danger', 'sm', 'mt-3')}
             >
               {t.teamSettings.delete}
             </button>
           ) : (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-sm text-zinc-600 dark:text-zinc-300">{t.teamSettings.confirm}</span>
+              <span className="text-sm text-fg">{t.teamSettings.confirm}</span>
               <button
                 type="button"
                 onClick={onDelete}
                 disabled={deleting}
-                className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-40"
+                className={buttonClasses('danger', 'sm')}
               >
                 {deleting ? '…' : t.teamSettings.confirmDelete}
               </button>
@@ -112,13 +118,17 @@ export default function TeamSettings({
                 type="button"
                 onClick={() => setConfirming(false)}
                 disabled={deleting}
-                className="rounded-md px-3 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                className={buttonClasses('ghost', 'sm')}
               >
                 {t.teamSettings.cancel}
               </button>
             </div>
           )}
-          {deleteError ? <p className="mt-2 text-xs text-red-600">{deleteError}</p> : null}
+          {deleteError ? (
+            <Alert variant="danger" className="mt-2">
+              {deleteError}
+            </Alert>
+          ) : null}
         </div>
       ) : null}
     </section>

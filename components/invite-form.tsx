@@ -5,6 +5,9 @@ import { createInvitation } from '@/app/(app)/teams/[id]/actions'
 import { useI18n } from '@/components/i18n-provider'
 import { fmt } from '@/lib/i18n/format'
 import type { Role } from '@/lib/types'
+import { Alert } from '@/components/ui/alert'
+import { Input, Select, Field } from '@/components/ui/input'
+import { buttonClasses } from '@/components/ui/button'
 
 // owner nunca se invita (lo bloquean el CHECK y la RLS).
 const INVITE_ROLES: Role[] = ['viewer', 'editor', 'admin']
@@ -47,63 +50,51 @@ export default function InviteForm({ teamId }: { teamId: string }) {
 
   return (
     <div>
-      <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2">
-        <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
-          <span className="font-medium">{t.invite.email}</span>
-          <input
+      <form onSubmit={onSubmit} className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+        <Field label={t.invite.email} className="min-w-[14rem] flex-1">
+          <Input
             name="email"
             type="email"
             required
             placeholder={t.invite.emailPlaceholder}
-            className="rounded-md border border-black/15 bg-transparent px-3 py-2 outline-none focus:border-black/40 dark:border-white/15"
           />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">{t.invite.role}</span>
-          <select
-            name="role"
-            defaultValue="editor"
-            className="rounded-md border border-black/15 bg-transparent px-3 py-2 outline-none dark:border-white/15"
-          >
+        </Field>
+        <Field label={t.invite.role}>
+          <Select name="role" defaultValue="editor">
             {INVITE_ROLES.map((r) => (
               <option key={r} value={r}>
                 {r}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">{t.invite.expires}</span>
-          <select
-            name="ttl"
-            defaultValue="7"
-            className="rounded-md border border-black/15 bg-transparent px-3 py-2 outline-none dark:border-white/15"
-          >
+          </Select>
+        </Field>
+        <Field label={t.invite.expires}>
+          <Select name="ttl" defaultValue="7">
             {TTL_OPTIONS.map((d) => (
               <option key={d} value={d}>
                 {d === 1 ? t.invite.day : fmt(t.invite.days, { n: d })}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </Field>
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className={buttonClasses('primary', 'md', 'w-full sm:w-auto')}
         >
           {isPending ? t.invite.creating : t.invite.submit}
         </button>
       </form>
 
       {error ? (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <Alert variant="danger" className="mt-3">
           {error}
-        </p>
+        </Alert>
       ) : null}
 
       {link ? (
-        <div className="mt-3 rounded-md border border-black/10 bg-zinc-50 p-3 dark:border-white/10 dark:bg-zinc-800/50">
-          <p className="text-xs font-medium text-zinc-500">{t.invite.linkLabel}</p>
+        <div className="mt-3 rounded-md border border-border bg-surface-sunken p-3">
+          <p className="text-xs font-medium text-muted">{t.invite.linkLabel}</p>
           <div className="mt-1 flex items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded bg-black/5 px-2 py-1 text-xs dark:bg-white/10">
               {link}
@@ -111,7 +102,7 @@ export default function InviteForm({ teamId }: { teamId: string }) {
             <button
               type="button"
               onClick={copy}
-              className="shrink-0 rounded-md border border-black/15 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5"
+              className={buttonClasses('secondary', 'sm', 'shrink-0')}
             >
               {copied ? t.common.copied : t.common.copy}
             </button>

@@ -43,14 +43,19 @@ export default function CollabDocEditor({
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Alinear el tema de BlockNote con el prefers-color-scheme de la app.
+  // Alinear el tema de BlockNote con el tema REAL de la app (`data-theme` en <html>,
+  // que setea el toggle manual / script anti-flash), no solo con el del sistema —
+  // si no, al forzar dark con sistema en light el editor quedaría claro.
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const apply = () => setTheme(mq.matches ? 'dark' : 'light')
-    apply()
-    mq.addEventListener('change', apply)
-    return () => mq.removeEventListener('change', apply)
+    const read = () => {
+      const dt = document.documentElement.getAttribute('data-theme')
+      setTheme(dt === 'dark' ? 'dark' : 'light')
+    }
+    read()
+    const obs = new MutationObserver(read)
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => obs.disconnect()
   }, [])
 
   const onTitleChange = useCallback(
@@ -77,16 +82,17 @@ export default function CollabDocEditor({
             value={title}
             onChange={onTitleChange}
             maxLength={200}
+            aria-label={t.docs.titlePlaceholder}
             placeholder={t.docs.titlePlaceholder}
-            className="w-full border-0 bg-transparent text-3xl font-semibold tracking-tight outline-none placeholder:text-zinc-300"
+            className="w-full border-0 bg-transparent text-3xl font-semibold tracking-tight text-fg outline-none placeholder:text-subtle"
           />
         ) : (
-          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-fg">{title}</h1>
         )}
         {editable ? (
           <SaveBadge state={saveState} />
         ) : (
-          <span className="shrink-0 text-xs text-zinc-400">{t.docs.readOnly}</span>
+          <span className="shrink-0 text-xs text-subtle">{t.docs.readOnly}</span>
         )}
       </div>
 
@@ -114,7 +120,7 @@ function SaveBadge({ state }: { state: SaveState }) {
   }
   if (!label[state]) return null
   return (
-    <span className={`shrink-0 text-xs ${state === 'error' ? 'text-red-500' : 'text-zinc-400'}`}>
+    <span className={`shrink-0 text-xs ${state === 'error' ? 'text-danger-fg' : 'text-subtle'}`}>
       {label[state]}
     </span>
   )

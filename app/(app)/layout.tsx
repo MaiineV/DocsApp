@@ -9,6 +9,7 @@ import { getDictionary, getLocale } from '@/lib/i18n'
 import { signOut } from '@/app/login/actions'
 import TeamSwitcher from '@/components/team-switcher'
 import Avatar from '@/components/avatar'
+import ThemeToggle from '@/components/theme-toggle'
 import { SubmitButton } from '@/components/submit-button'
 
 // Shell del área autenticada. El proxy ya redirige a /login si no hay sesión;
@@ -32,9 +33,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="flex items-center justify-between border-b border-black/10 px-6 py-3 dark:border-white/10">
-        <div className="flex items-center gap-3">
-          <Link href="/docs" className="font-semibold tracking-tight">
+      <header className="flex items-center justify-between border-b border-black/10 px-4 py-3 sm:px-6 dark:border-white/10">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Link href="/docs" className="shrink-0 font-semibold tracking-tight">
             DocsApp
           </Link>
           {teams.length > 0 ? (
@@ -43,13 +44,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           {active ? (
             <Link
               href={`/teams/${active.id}`}
-              className="rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-100"
+              className="hidden rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-ghost hover:text-fg sm:inline-flex"
             >
               {t.header.manageTeam}
             </Link>
           ) : null}
         </div>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
+          <ThemeToggle />
           <Link
             href="/profile"
             aria-label={t.profile.title}
@@ -61,7 +63,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <form action={signOut}>
-            <SubmitButton className="rounded-md border border-black/15 px-3 py-1.5 font-medium transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5">
+            <SubmitButton className="rounded-md border border-black/15 px-3 py-2 font-medium transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5">
               {t.header.signOut}
             </SubmitButton>
           </form>

@@ -6,6 +6,9 @@ import { useI18n } from '@/components/i18n-provider'
 import { fmt } from '@/lib/i18n/format'
 import { displayName } from '@/lib/collab'
 import Avatar from '@/components/avatar'
+import { Alert } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Button, buttonClasses } from '@/components/ui/button'
 import type { Role, TeamMember } from '@/lib/types'
 
 const ALL_ROLES: Role[] = ['viewer', 'editor', 'admin', 'owner']
@@ -28,6 +31,8 @@ export default function MembersList({
   const { t } = useI18n()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  // userId being confirmed for removal, or null when no confirmation open
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
 
   const ownerCount = members.filter((m) => m.role === 'owner').length
   // Solo un owner puede asignar el rol owner.
@@ -41,9 +46,8 @@ export default function MembersList({
     })
   }
 
-  function onRemove(userId: string, email: string, self: boolean) {
-    const msg = self ? t.members.confirmLeave : fmt(t.members.confirmRemove, { email })
-    if (!window.confirm(msg)) return
+  function onRemoveConfirmed(userId: string) {
+    setConfirmingId(null)
     setError(null)
     startTransition(async () => {
       const res = await removeMember(teamId, userId)
@@ -54,12 +58,12 @@ export default function MembersList({
   return (
     <div>
       {error ? (
-        <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <Alert variant="danger" className="mb-3">
           {error}
-        </p>
+        </Alert>
       ) : null}
 
-      <ul className="divide-y divide-black/10 dark:divide-white/10">
+      <ul className="divide-y divide-border">
         {members.map((m) => {
           const self = m.user_id === currentUserId
           const isOwner = m.role === 'owner'
@@ -70,6 +74,7 @@ export default function MembersList({
           const removable = !isLastOwner && (self || (canManage && !lockedByOwnership))
           // Si el rol actual no está en las opciones asignables, mostrarlo igual.
           const options = assignable.includes(m.role) ? assignable : [...assignable, m.role]
+          const isConfirming = confirmingId === m.user_id
 
           return (
             <li key={m.user_id} className="flex items-center justify-between gap-3 py-3">
@@ -79,12 +84,10 @@ export default function MembersList({
                   <div className="flex items-center gap-2">
                     <span className="truncate font-medium">{displayName(m.nickname, m.email)}</span>
                     {self ? (
-                      <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800">
-                        {t.members.you}
-                      </span>
+                      <Badge variant="neutral">{t.members.you}</Badge>
                     ) : null}
                   </div>
-                  <span className="block truncate text-xs text-zinc-400">{m.email}</span>
+                  <span className="block truncate text-xs text-muted">{m.email}</span>
                 </div>
               </div>
 
@@ -95,27 +98,51 @@ export default function MembersList({
                     value={m.role}
                     disabled={!roleEditable || isPending}
                     onChange={(e) => onRoleChange(m.user_id, e.target.value as Role)}
-                    className="rounded-md border border-black/15 bg-transparent px-2 py-1 text-sm outline-none disabled:opacity-50 dark:border-white/15"
+                    className="rounded-md border border-input bg-transparent px-2 py-1 text-sm outline-none disabled:opacity-50"
                   >
                     {options.map((r) => (
                       <option key={r} value={r}>
-                        {r}
+                        {t.roles[r]}
                       </option>
                     ))}
                   </select>
                 ) : (
-                  <span className="text-sm text-zinc-500">{m.role}</span>
+                  <Badge variant="neutral">{t.roles[m.role]}</Badge>
                 )}
 
                 {removable ? (
-                  <button
-                    type="button"
-                    onClick={() => onRemove(m.user_id, m.email, self)}
-                    disabled={isPending}
-                    className="rounded-md border border-red-200 px-2.5 py-1 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:hover:bg-red-950"
-                  >
-                    {self ? t.members.leave : t.members.remove}
-                  </button>
+                  isConfirming ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-muted">
+                        {self ? t.members.confirmLeave : fmt(t.members.confirmRemove, { email: m.email })}
+                      </span>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => onRemoveConfirmed(m.user_id)}
+                        disabled={isPending}
+                      >
+                        {self ? t.members.leave : t.members.remove}
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingId(null)}
+                        disabled={isPending}
+                        className={buttonClasses('ghost', 'sm')}
+                      >
+                        {t.teamSettings.cancel}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingId(m.user_id)}
+                      disabled={isPending}
+                      className={buttonClasses('danger', 'sm')}
+                    >
+                      {self ? t.members.leave : t.members.remove}
+                    </button>
+                  )
                 ) : null}
               </div>
             </li>
@@ -124,7 +151,7 @@ export default function MembersList({
       </ul>
 
       {canManage && ownerCount === 1 ? (
-        <p className="mt-3 text-xs text-zinc-400">{t.members.lastOwnerNote}</p>
+        <p className="mt-3 text-xs text-muted">{t.members.lastOwnerNote}</p>
       ) : null}
     </div>
   )

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { updateProfile, changePassword } from '@/app/(app)/profile/actions'
 import { useI18n } from '@/components/i18n-provider'
 import Avatar from '@/components/avatar'
+import { Input, controlClasses } from '@/components/ui/input'
+import { buttonClasses } from '@/components/ui/button'
 
 export default function ProfileEditor({
   userId,
@@ -22,10 +24,12 @@ export default function ProfileEditor({
 
   const [nickname, setNickname] = useState(initialNickname)
   const [nickMsg, setNickMsg] = useState('')
+  const [nickIsError, setNickIsError] = useState(false)
   const [savingNick, startNick] = useTransition()
 
   const [pw, setPw] = useState('')
   const [pwMsg, setPwMsg] = useState('')
+  const [pwIsError, setPwIsError] = useState(false)
   const [changingPw, startPw] = useTransition()
 
   const emailPrefix = email.split('@')[0]
@@ -34,13 +38,16 @@ export default function ProfileEditor({
   function onSaveNick(e: FormEvent) {
     e.preventDefault()
     setNickMsg('')
+    setNickIsError(false)
     startNick(async () => {
       const res = await updateProfile(nickname)
       if (res.ok) {
         setNickMsg(t.profile.saved)
+        setNickIsError(false)
         router.refresh()
       } else {
         setNickMsg(res.error ?? '')
+        setNickIsError(true)
       }
     })
   }
@@ -48,22 +55,21 @@ export default function ProfileEditor({
   function onChangePw(e: FormEvent) {
     e.preventDefault()
     setPwMsg('')
+    setPwIsError(false)
     startPw(async () => {
       const res = await changePassword(pw)
       if (res.ok) {
         setPwMsg(t.profile.passwordChanged)
+        setPwIsError(false)
         setPw('')
       } else {
         setPwMsg(res.error ?? '')
+        setPwIsError(true)
       }
     })
   }
 
-  const inputCls =
-    'rounded-md border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/15 dark:focus:border-white/40'
-  const btnCls =
-    'rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-40 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200'
-  const h2Cls = 'text-xs font-semibold uppercase tracking-wide text-zinc-400'
+  const h2Cls = 'text-xs font-semibold uppercase tracking-wide text-muted'
 
   return (
     <div className="mt-8 space-y-10">
@@ -71,25 +77,34 @@ export default function ProfileEditor({
         <Avatar name={display} seed={userId} size={56} />
         <div className="min-w-0">
           <p className="truncate font-medium">{display}</p>
-          <p className="truncate text-sm text-zinc-500">{email}</p>
+          <p className="truncate text-sm text-muted">{email}</p>
         </div>
       </div>
 
       <section>
         <h2 className={h2Cls}>{t.profile.nickname}</h2>
         <form onSubmit={onSaveNick} className="mt-3 flex gap-2">
-          <input
+          <Input
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             maxLength={50}
             placeholder={emailPrefix}
-            className={`flex-1 ${inputCls}`}
+            className="flex-1"
+            aria-describedby={nickMsg ? 'nick-msg' : undefined}
           />
-          <button type="submit" disabled={savingNick} className={btnCls}>
+          <button type="submit" disabled={savingNick} className={buttonClasses('primary', 'md')}>
             {savingNick ? '…' : t.profile.save}
           </button>
         </form>
-        {nickMsg ? <p className="mt-2 text-xs text-zinc-500">{nickMsg}</p> : null}
+        {nickMsg ? (
+          <p
+            id="nick-msg"
+            role={nickIsError ? 'alert' : undefined}
+            className={`mt-2 text-xs ${nickIsError ? 'text-danger-fg' : 'text-success'}`}
+          >
+            {nickMsg}
+          </p>
+        ) : null}
       </section>
 
       <section>
@@ -103,16 +118,29 @@ export default function ProfileEditor({
                 onChange={(e) => setPw(e.target.value)}
                 placeholder={t.profile.newPassword}
                 autoComplete="new-password"
-                className={`flex-1 ${inputCls}`}
+                aria-describedby={pwMsg ? 'pw-msg' : undefined}
+                className={`flex-1 ${controlClasses}`}
               />
-              <button type="submit" disabled={changingPw || pw.length < 6} className={btnCls}>
+              <button
+                type="submit"
+                disabled={changingPw || pw.length < 6}
+                className={buttonClasses('primary', 'md')}
+              >
                 {changingPw ? '…' : t.profile.changePassword}
               </button>
             </form>
-            {pwMsg ? <p className="mt-2 text-xs text-zinc-500">{pwMsg}</p> : null}
+            {pwMsg ? (
+              <p
+                id="pw-msg"
+                role={pwIsError ? 'alert' : undefined}
+                className={`mt-2 text-xs ${pwIsError ? 'text-danger-fg' : 'text-success'}`}
+              >
+                {pwMsg}
+              </p>
+            ) : null}
           </>
         ) : (
-          <p className="mt-3 rounded-md bg-zinc-100 px-3 py-2 text-sm text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+          <p className="mt-3 rounded-md bg-surface-sunken px-3 py-2 text-sm text-muted">
             {t.profile.googleAccount}
           </p>
         )}

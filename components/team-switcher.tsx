@@ -42,44 +42,52 @@ export default function TeamSwitcher({
   const active = teams.find((t) => t.id === activeTeamId) ?? teams[0]
   if (!active) return null
 
+  const itemClasses =
+    'flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-ghost focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+
   return (
-    <details ref={ref} className="group relative">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
-        <span className="max-w-[12rem] truncate">{active.name}</span>
-        <span className="text-zinc-400">· {active.role}</span>
-        <span aria-hidden className="text-[10px] transition-transform group-open:rotate-180">
+    <details ref={ref} className="group relative min-w-0">
+      <summary className="flex min-w-0 cursor-pointer list-none items-center gap-1.5 rounded-full bg-surface-sunken px-3 py-2 text-xs font-medium text-fg transition-colors hover:bg-ghost focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <span className="max-w-[7rem] truncate sm:max-w-[12rem]">{active.name}</span>
+        <span className="shrink-0 text-subtle">· {active.role}</span>
+        <span aria-hidden className="shrink-0 text-[10px] transition-transform group-open:rotate-180">
           ▾
         </span>
       </summary>
 
-      <div className="absolute left-0 z-20 mt-2 w-64 rounded-lg border border-black/10 bg-white p-1 shadow-lg dark:border-white/10 dark:bg-zinc-900">
-        <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+      {/* Panel: ancho acotado al viewport en mobile; alto limitado con scroll. */}
+      <div className="absolute left-0 z-20 mt-2 flex max-h-[min(70vh,28rem)] w-64 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-lg border border-border bg-surface p-1 shadow-lg">
+        <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
           {tr.header.teams}
         </p>
-        {teams.map((t) => (
-          <form key={t.id} action={setActiveTeam.bind(null, t.id)}>
-            <SubmitButton
-              spinner={false}
-              className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5 ${
-                t.id === active.id ? 'font-semibold' : ''
-              }`}
-            >
-              <span className="truncate">{t.name}</span>
-              <span className="ml-2 shrink-0 text-xs text-zinc-400">
-                {t.id === active.id ? '✓ ' : ''}
-                {t.role}
-              </span>
-            </SubmitButton>
-          </form>
-        ))}
 
-        <div className="my-1 border-t border-black/10 dark:border-white/10" />
-        <Link
-          href="/teams/new"
-          className="block rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-        >
-          {tr.header.createTeam}
-        </Link>
+        {/* Lista de equipos: scrollea si hay muchos (panel con scroll). */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {teams.map((t) => (
+            <form key={t.id} action={setActiveTeam.bind(null, t.id)}>
+              <SubmitButton
+                spinner={false}
+                className={`${itemClasses} ${t.id === active.id ? 'font-semibold' : ''}`}
+              >
+                <span className="truncate">{t.name}</span>
+                <span className="ml-2 shrink-0 text-xs text-subtle">
+                  {t.id === active.id ? '✓ ' : ''}
+                  {t.role}
+                </span>
+              </SubmitButton>
+            </form>
+          ))}
+        </div>
+
+        {/* Acciones fijas (siempre alcanzables, fuera del scroll). */}
+        <div className="mt-1 border-t border-border pt-1">
+          <Link href={`/teams/${active.id}`} className={itemClasses}>
+            {tr.header.manageTeam}
+          </Link>
+          <Link href="/teams/new" className={itemClasses}>
+            {tr.header.createTeam}
+          </Link>
+        </div>
       </div>
     </details>
   )

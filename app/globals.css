@@ -1,28 +1,119 @@
 @import "tailwindcss";
 
+/* Dark mode por atributo `data-theme` (lo setea un script anti-flash en el layout
+   antes de hidratar). Esto reemplaza el default de Tailwind (`prefers-color-scheme`)
+   por uno controlable con un toggle, conservando "sistema" como opción. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ───────────────────────────────────────────────────────────
+   Tokens semánticos (dirección "pulido neutral": zinc monocromo).
+   Fuente de verdad en runtime: estas CSS vars. Light por defecto;
+   `[data-theme="dark"]` las pisa. `@theme inline` (más abajo) las
+   expone como utilidades de Tailwind (bg-surface, text-muted, …).
+─────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #ffffff;            /* fondo de página */
+  --surface: #ffffff;      /* cards, dropdowns, header */
+  --surface-sunken: #f4f4f5;/* paneles read-only, code */
+
+  --border: rgb(0 0 0 / 0.10);       /* divisores, bordes de card */
+  --input: rgb(0 0 0 / 0.15);        /* bordes de formularios */
+  --ring: rgb(0 0 0 / 0.35);         /* focus ring */
+
+  --fg: #18181b;           /* texto primario (zinc-900) */
+  --muted: #71717a;        /* texto secundario (zinc-500) */
+  --subtle: #a1a1aa;       /* timestamps, placeholders (zinc-400) */
+
+  --primary: #18181b;      /* acción primaria (zinc-900) */
+  --primary-hover: #3f3f46;/* zinc-700 */
+  --primary-fg: #ffffff;
+
+  --ghost: rgb(0 0 0 / 0.05);   /* hover de botones ghost / items */
+  --active: rgb(0 0 0 / 0.08);  /* item de nav ACTIVO (más visible que antes) */
+
+  --danger: #dc2626;
+  --danger-fg: #b91c1c;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+  --success: #15803d;
+
+  --badge: #f4f4f5;        /* fondo de badge neutro (zinc-100) */
+  --badge-fg: #52525b;     /* texto de badge (zinc-600) */
 }
 
+[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --surface: #18181b;       /* zinc-900 */
+  --surface-sunken: #27272a;/* zinc-800 */
+
+  --border: rgb(255 255 255 / 0.10);
+  --input: rgb(255 255 255 / 0.15);
+  --ring: rgb(255 255 255 / 0.40);
+
+  --fg: #ededed;
+  --muted: #a1a1aa;         /* zinc-400 */
+  --subtle: #71717a;        /* zinc-500 */
+
+  --primary: #fafafa;
+  --primary-hover: #e4e4e7;
+  --primary-fg: #18181b;
+
+  --ghost: rgb(255 255 255 / 0.06);
+  --active: rgb(255 255 255 / 0.10);
+
+  --danger: #f87171;
+  --danger-fg: #fca5a5;
+  --danger-bg: #450a0a;     /* red-950 */
+  --danger-border: #7f1d1d; /* red-900 */
+  --success: #4ade80;
+
+  --badge: #27272a;
+  --badge-fg: #a1a1aa;
+}
+
+/* Exponer los tokens como utilidades Tailwind. `inline` mantiene el valor como
+   var() en runtime → el swap de tema por `[data-theme]` aplica sin rebuild. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-ghost: var(--ghost);
+  --color-active: var(--active);
+  --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-border: var(--danger-border);
+  --color-success: var(--success);
+  --color-badge: var(--badge);
+  --color-badge-fg: var(--badge-fg);
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  /* Fix: usar Geist (var seteada por next/font en <html>) en vez de Arial. */
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Barra de progreso de navegación (indeterminada): un segmento que se desliza. */
@@ -32,5 +123,14 @@ body {
   }
   100% {
     left: 100%;
+  }
+}
+
+/* La toolbar flotante de BlockNote no debe cortarse en pantallas chicas. */
+@media (max-width: 639px) {
+  .bn-toolbar,
+  .bn-formatting-toolbar {
+    max-width: calc(100vw - 1.5rem);
+    overflow-x: auto;
   }
 }

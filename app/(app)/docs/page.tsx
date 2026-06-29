@@ -7,6 +7,9 @@ import { buildDocTree, type DocNode } from '@/lib/doc-tree'
 import { getDictionary, getLocale, type Locale } from '@/lib/i18n'
 import { fmt } from '@/lib/i18n/format'
 import NewDocButton from '@/components/new-doc-button'
+import { buttonClasses } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export default async function DocsPage({
   searchParams,
@@ -33,24 +36,33 @@ export default async function DocsPage({
           <NewDocButton
             parentId={null}
             label={t.docs.newDoc}
-            className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className={buttonClasses('primary')}
           />
         ) : null}
       </div>
 
       {error ? (
-        <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <Alert variant="danger" className="mt-4">
           {error}
-        </p>
+        </Alert>
       ) : null}
 
       {tree.length === 0 ? (
-        <div className="mt-10 rounded-lg border border-dashed border-black/15 p-12 text-center text-zinc-500 dark:border-white/15">
-          {fmt(t.docs.emptyTitle, { team: team.name })}
-          {canEdit ? t.docs.emptyCreate : ''}
-        </div>
+        <EmptyState
+          className="mt-10"
+          title={fmt(t.docs.emptyTitle, { team: team.name })}
+          action={
+            canEdit ? (
+              <NewDocButton
+                parentId={null}
+                label={t.docs.emptyCreate.trim()}
+                className={buttonClasses('primary')}
+              />
+            ) : undefined
+          }
+        />
       ) : (
-        <ul className="mt-6 divide-y divide-black/10 dark:divide-white/10">
+        <ul className="mt-6 divide-y divide-border">
           <DocTreeRows nodes={tree} depth={0} untitled={t.common.untitled} locale={locale} />
         </ul>
       )}
@@ -78,14 +90,14 @@ function DocTreeRows({
           <li>
             <Link
               href={`/docs/${node.id}`}
-              className="flex items-center justify-between py-3 transition-colors hover:bg-black/[.03] dark:hover:bg-white/[.03]"
+              className="flex items-center justify-between py-3 transition-colors hover:bg-surface-sunken"
               style={{ paddingLeft: depth * 20 }}
             >
               <span className="truncate font-medium">
-                {depth > 0 ? <span className="mr-1.5 text-zinc-300">└</span> : null}
+                {depth > 0 ? <span className="mr-1.5 text-subtle">└</span> : null}
                 {node.title || untitled}
               </span>
-              <span className="shrink-0 pl-3 text-xs text-zinc-400">
+              <span className="shrink-0 pl-3 text-xs text-subtle">
                 {new Date(node.updated_at).toLocaleDateString(locale)}
               </span>
             </Link>

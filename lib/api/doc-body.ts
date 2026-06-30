@@ -86,6 +86,7 @@ export async function replaceDocBody(
     .from('documents')
     .select('team_id, ydoc_state')
     .eq('id', docId)
+    .is('deleted_at', null) // no editar un doc en la papelera
     .maybeSingle()
   if (error) return { res: { ok: false, status: 500, error: error.message }, broadcast: false }
   if (!doc) {

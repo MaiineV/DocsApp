@@ -21,6 +21,7 @@ export async function GET(request: Request, { params }: Params): Promise<Respons
     .from('documents')
     .select('id, title, parent_id, updated_at')
     .eq('team_id', teamId)
+    .is('deleted_at', null)
     .order('updated_at', { ascending: false })
   if (error) return fail('internal', error.message)
 

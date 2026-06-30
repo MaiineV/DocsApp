@@ -29,16 +29,23 @@ export default async function DocsPage({
   const canEdit = team.role !== 'viewer'
 
   return (
-    <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">{t.docs.title}</h1>
-        {canEdit ? (
-          <NewDocButton
-            parentId={null}
-            label={t.docs.newDoc}
-            className={buttonClasses('primary')}
-          />
-        ) : null}
+    <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">{t.docs.title}</h1>
+        <div className="flex shrink-0 items-center gap-2">
+          {canEdit ? (
+            <Link href="/docs/trash" className={buttonClasses('ghost', 'sm')}>
+              {t.trash.link}
+            </Link>
+          ) : null}
+          {canEdit ? (
+            <NewDocButton
+              parentId={null}
+              label={t.docs.newDoc}
+              className={buttonClasses('primary')}
+            />
+          ) : null}
+        </div>
       </div>
 
       {error ? (

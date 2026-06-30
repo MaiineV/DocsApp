@@ -104,7 +104,8 @@ vivo por Realtime a los editores abiertos.
 → `200` `{ "ok": true, "titleUpdated": true, "bodyUpdated": true, "broadcast": true, "version": 5 }`
 
 ### `DELETE /documents/{id}`
-Borra el doc (los hijos suben a raíz). Requiere `editor+`. → `204` sin body.
+Manda el doc **a la papelera** (soft-delete) junto con sus subpáginas (cascada). Es **recuperable** desde
+la web (`/docs/trash`). Requiere `editor+`. → `204` sin body.
 
 ---
 

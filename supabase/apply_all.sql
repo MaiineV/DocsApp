@@ -787,3 +787,13 @@ create trigger documents_set_search_text
 create index if not exists documents_search_idx
   on public.documents
   using gin (to_tsvector('simple', search_text));
+
+-- ===========================================================================
+-- Papelera (soft-delete) de documentos — 20260702120000
+-- ===========================================================================
+
+alter table public.documents add column if not exists deleted_at timestamptz;
+
+create index if not exists documents_active_idx
+  on public.documents (team_id, updated_at desc)
+  where deleted_at is null;

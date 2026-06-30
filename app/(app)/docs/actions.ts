@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getActiveTeam } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { casMergeYdoc } from '@/lib/yjs/persist'
+import { softDeleteDoc, restoreDoc, purgeDoc } from '@/lib/trash'
 import type { SearchResult } from '@/lib/types'
 
 // Crea un documento vacío y abre el editor. Si `parentId` viene, el doc es hijo
@@ -134,18 +135,38 @@ export async function persistTitle(
   return { ok: true }
 }
 
-// Borra el documento. RLS exige rol editor o superior. Los hijos NO se borran:
-// suben a raíz (parent_id pasa a null por ON DELETE SET NULL).
+// Manda el documento a la PAPELERA (soft-delete) junto con su subárbol (cascada
+// estilo Notion). Recuperable desde /docs/trash. RLS exige editor+ (viewer → 403).
 export async function deleteDocument(id: string) {
   const supabase = await createClient()
-  const { error } = await supabase.from('documents').delete().eq('id', id)
+  const res = await softDeleteDoc(supabase, id)
 
-  if (error) {
-    redirect(`/docs/${id}?error=${encodeURIComponent(error.message)}`)
+  if (!res.ok) {
+    redirect(`/docs/${id}?error=${encodeURIComponent(res.error ?? 'No se pudo borrar.')}`)
   }
 
   revalidatePath('/docs', 'layout')
+  revalidatePath('/docs/trash')
   redirect('/docs')
+}
+
+// Restaura un doc (y su subárbol) desde la papelera. RLS editor+.
+export async function restoreDocument(id: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient()
+  const res = await restoreDoc(supabase, id)
+  if (res.ok) {
+    revalidatePath('/docs', 'layout')
+    revalidatePath('/docs/trash')
+  }
+  return { ok: res.ok, error: res.error }
+}
+
+// Borra DEFINITIVAMENTE (hard delete) un doc en papelera (y su subárbol). RLS editor+.
+export async function purgeDocument(id: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient()
+  const res = await purgeDoc(supabase, id)
+  if (res.ok) revalidatePath('/docs/trash')
+  return { ok: res.ok, error: res.error }
 }
 
 // Búsqueda full-text de documentos visibles. La RLS de `documents` ya limita a los
@@ -164,12 +185,14 @@ export async function searchDocuments(rawQuery: string): Promise<SearchResult[]>
     supabase
       .from('documents')
       .select(fields)
+      .is('deleted_at', null)
       .textSearch('search_text', q, { type: 'websearch', config: 'simple' })
       .order('updated_at', { ascending: false })
       .limit(20),
     supabase
       .from('documents')
       .select(fields)
+      .is('deleted_at', null)
       .ilike('title', `%${q}%`)
       .order('updated_at', { ascending: false })
       .limit(20),

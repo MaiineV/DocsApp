@@ -5,6 +5,7 @@ import { authenticateRequest, isAuthError } from '@/lib/api/auth'
 import { fail, ok, noContent, type ApiErrorCode } from '@/lib/api/respond'
 import { contentToBlocks } from '@/lib/api/markdown'
 import { readDocBody, replaceDocBody, type ReadFormat } from '@/lib/api/doc-body'
+import { softDeleteDoc } from '@/lib/trash'
 
 export const runtime = 'nodejs'
 
@@ -24,6 +25,7 @@ export async function GET(request: Request, { params }: Params): Promise<Respons
     .from('documents')
     .select('id, title, team_id, parent_id, updated_at, content, ydoc_state')
     .eq('id', id)
+    .is('deleted_at', null)
     .maybeSingle()
   if (error) return fail('internal', error.message)
   if (!doc) return fail('not_found', 'Documento no encontrado o sin acceso.')
@@ -117,21 +119,16 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
   return ok({ ok: true, titleUpdated, bodyUpdated, broadcast, version })
 }
 
-// DELETE /api/v1/documents/:id — borra el doc. RLS (editor+) gatea; los hijos
-// suben a raíz (ON DELETE SET NULL), igual que la action de la UI.
+// DELETE /api/v1/documents/:id — manda el doc a la PAPELERA (soft-delete) junto
+// con su subárbol (recuperable desde la web). RLS (editor+) gatea.
 export async function DELETE(request: Request, { params }: Params): Promise<Response> {
   const auth = await authenticateRequest(request)
   if (isAuthError(auth)) return auth.error
   const { id } = await params
 
-  const { data, error } = await auth.supabase
-    .from('documents')
-    .delete()
-    .eq('id', id)
-    .select('id')
-  if (error) return fail('internal', error.message)
-  if (!data || data.length === 0) {
-    return fail('forbidden', 'Sin permiso para borrar este documento (o no existe).')
+  const res = await softDeleteDoc(auth.supabase, id)
+  if (!res.ok) {
+    return fail(STATUS_TO_CODE[res.status] ?? 'internal', res.error ?? 'No se pudo borrar el documento.')
   }
 
   revalidatePath('/docs', 'layout')

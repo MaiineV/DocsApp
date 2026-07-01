@@ -797,3 +797,106 @@ alter table public.documents add column if not exists deleted_at timestamptz;
 create index if not exists documents_active_idx
   on public.documents (team_id, updated_at desc)
   where deleted_at is null;
+
+-- ===========================================================================
+-- Personal Access Tokens (PAT) + rate-limiting de la API — 20260701155134
+-- ===========================================================================
+
+create table if not exists public.api_tokens (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references auth.users (id) on delete cascade,
+  name         text not null check (char_length(trim(name)) between 1 and 100),
+  token_hash   text not null unique,
+  token_prefix text not null,
+  scope        text not null default 'read_write' check (scope in ('read', 'read_write')),
+  expires_at   timestamptz,
+  last_used_at timestamptz,
+  created_at   timestamptz not null default now()
+);
+comment on table public.api_tokens is 'Personal Access Tokens de la API. Solo se guarda el hash del token.';
+
+create index if not exists api_tokens_user_idx on public.api_tokens (user_id, created_at desc);
+
+alter table public.api_tokens enable row level security;
+
+create policy api_tokens_select_own on public.api_tokens
+  for select to authenticated using ( user_id = (select auth.uid()) );
+create policy api_tokens_insert_own on public.api_tokens
+  for insert to authenticated with check ( user_id = (select auth.uid()) );
+create policy api_tokens_update_own on public.api_tokens
+  for update to authenticated
+  using ( user_id = (select auth.uid()) )
+  with check ( user_id = (select auth.uid()) );
+create policy api_tokens_delete_own on public.api_tokens
+  for delete to authenticated using ( user_id = (select auth.uid()) );
+
+create or replace function public.consume_api_token(p_hash text)
+returns table (token_id uuid, user_id uuid, scope text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_id    uuid;
+  v_user  uuid;
+  v_scope text;
+begin
+  select t.id, t.user_id, t.scope
+    into v_id, v_user, v_scope
+  from public.api_tokens t
+  where t.token_hash = p_hash
+    and (t.expires_at is null or t.expires_at > now());
+
+  if v_id is null then
+    return;
+  end if;
+
+  update public.api_tokens
+    set last_used_at = now()
+    where id = v_id
+      and (last_used_at is null or last_used_at < now() - interval '1 minute');
+
+  return query select v_id, v_user, v_scope;
+end;
+$$;
+
+revoke all on function public.consume_api_token(text) from public, authenticated;
+grant execute on function public.consume_api_token(text) to anon;
+
+create table if not exists private.api_rate_limits (
+  bucket       text not null,
+  window_start timestamptz not null,
+  count        int not null default 0,
+  primary key (bucket, window_start)
+);
+
+create or replace function public.hit_rate_limit(p_limit int, p_window_seconds int)
+returns table (allowed boolean, remaining int, reset_at timestamptz)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_bucket text := coalesce((select auth.uid())::text, 'anon');
+  v_window timestamptz := to_timestamp(
+    floor(extract(epoch from now()) / p_window_seconds) * p_window_seconds
+  );
+  v_count int;
+begin
+  insert into private.api_rate_limits (bucket, window_start, count)
+    values (v_bucket, v_window, 1)
+    on conflict (bucket, window_start)
+    do update set count = private.api_rate_limits.count + 1
+    returning count into v_count;
+
+  delete from private.api_rate_limits where window_start < now() - interval '1 hour';
+
+  return query select
+    v_count <= p_limit,
+    greatest(0, p_limit - v_count),
+    v_window + make_interval(secs => p_window_seconds);
+end;
+$$;
+
+revoke all on function public.hit_rate_limit(int, int) from public, anon;
+grant execute on function public.hit_rate_limit(int, int) to authenticated;

@@ -31,6 +31,12 @@ export default async function ProfilePage() {
         initialNickname={profile?.nickname ?? ''}
         canChangePassword={canChangePassword}
       />
+
+      <div className="mt-10 border-t border-border pt-6">
+        <Link href="/profile/tokens" className="text-sm font-medium text-fg hover:underline">
+          {t.tokens.link}
+        </Link>
+      </div>
     </div>
   )
 }

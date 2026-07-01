@@ -10,6 +10,7 @@ export type ApiErrorCode =
   | 'bad_request'
   | 'conflict'
   | 'unsupported_media_type'
+  | 'too_many_requests'
   | 'internal'
 
 const STATUS: Record<ApiErrorCode, number> = {
@@ -19,6 +20,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   bad_request: 400,
   conflict: 409,
   unsupported_media_type: 415,
+  too_many_requests: 429,
   internal: 500,
 }
 
@@ -33,3 +35,12 @@ export function ok(data: unknown, status = 200): NextResponse {
 export const created = (data: unknown): NextResponse => ok(data, 201)
 
 export const noContent = (): NextResponse => new NextResponse(null, { status: 204 })
+
+// Adjunta headers (p. ej. `X-RateLimit-*`) a una respuesta ya construida.
+export function withHeaders(
+  res: NextResponse,
+  headers: Record<string, string>,
+): NextResponse {
+  for (const [key, value] of Object.entries(headers)) res.headers.set(key, value)
+  return res
+}

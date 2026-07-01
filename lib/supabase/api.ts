@@ -16,3 +16,15 @@ export function createApiClient(jwt: string): SupabaseClient {
     },
   )
 }
+
+// Cliente Supabase con la anon key y SIN header Authorization. Se usa para resolver
+// un Personal Access Token por su hash (RPC `consume_api_token`, ejecutable por el
+// rol `anon`) ANTES de tener contexto de usuario: la resolución del token es
+// pre-auth, así que no hay JWT que forwardear todavía.
+export function createAnonApiClient(): SupabaseClient {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  )
+}

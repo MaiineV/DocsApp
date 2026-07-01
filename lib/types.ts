@@ -50,6 +50,21 @@ export type Profile = {
 // Resultado de búsqueda de documentos (Fase 10).
 export type SearchResult = { id: string; title: string; team: string }
 
+// Scope de un Personal Access Token (Fase 7.2): read (GET) o read_write (todo).
+export type ApiTokenScope = 'read' | 'read_write'
+
+// Personal Access Token de la API (Fase 7.2). NUNCA incluye el token crudo ni su
+// hash: solo el prefijo visible (dapp_xxxx…) para identificarlo en la UI.
+export type ApiTokenRow = {
+  id: string
+  name: string
+  scope: ApiTokenScope
+  token_prefix: string
+  expires_at: string | null
+  last_used_at: string | null
+  created_at: string
+}
+
 // Invitación pendiente (Fase 3).
 export type Invitation = {
   id: string

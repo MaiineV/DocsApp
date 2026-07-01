@@ -21,10 +21,33 @@ Base URL (prod): `https://docs-app-orcin.vercel.app/api/v1` · (local): `http://
 Todas las rutas requieren el header:
 
 ```
-Authorization: Bearer <access_token>
+Authorization: Bearer <token>
 ```
 
-El `access_token` es un JWT de Supabase. Se obtiene logueándote con tu cuenta:
+Hay **dos formas** de obtener ese `<token>`. Para scripts/integraciones headless usá
+un **Personal Access Token** (recomendado): es estable, revocable y no depende del
+método de login. También se sigue aceptando un **JWT de Supabase** (login clásico).
+
+### Personal Access Tokens (PAT) — recomendado
+
+Un PAT es una clave `dapp_…` que creás desde la web en **`/profile/tokens`**. Se
+muestra **una sola vez** al crearla (guardala): en la base solo queda su hash.
+
+```
+Authorization: Bearer dapp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+- **Scopes:** `read` (solo `GET`) o `read_write` (todo). Un token `read` que intente
+  escribir → `403`.
+- **Vencimiento:** opcional (30 días / 90 días / sin vencimiento).
+- **Revocar:** desde `/profile/tokens`; deja de funcionar al instante.
+- **Cuentas de Google:** funcionan sin fricción — el PAT no depende del login, así que
+  no necesitás password ni flujo interactivo.
+- La autorización sigue siendo la misma RLS por equipo: el PAT actúa **como vos**.
+
+### JWT Bearer (login clásico)
+
+El `access_token` es un JWT de Supabase que se obtiene logueándote con tu cuenta:
 
 ```js
 import { createClient } from '@supabase/supabase-js'
@@ -39,11 +62,8 @@ const token = data.session.access_token        // ← usar como Bearer
 ```
 
 - El token vence (~1 h) y se renueva solo con el cliente de Supabase. Para un script,
-  guardá el `refresh_token` y dejá que `supabase-js` lo refresque.
-- **Cuentas de Google:** el login de Google es interactivo (browser). Para usar la API
-  headless, agregale una contraseña a la cuenta, o hacé el login una vez en el browser
-  y pasale el `refresh_token` al script. _(Más adelante: Personal Access Tokens, que
-  desacoplan la API del método de login — ver "Roadmap".)_
+  guardá el `refresh_token` y dejá que `supabase-js` lo refresque. (Para headless, un
+  PAT es más simple.)
 
 Errores de auth → `401` con `{ "error": { "code": "unauthorized", "message": "..." } }`.
 
@@ -116,10 +136,27 @@ Shape uniforme: `{ "error": { "code": "...", "message": "..." } }`.
 | Status | code | Cuándo |
 |---|---|---|
 | 400 | `bad_request` | body/markdown inválido |
-| 401 | `unauthorized` | falta el Bearer o token inválido/vencido |
-| 403 | `forbidden` | sin permiso (p. ej. `viewer` intentando editar/borrar) |
+| 401 | `unauthorized` | falta el Bearer o token inválido/vencido/revocado |
+| 403 | `forbidden` | sin permiso (`viewer` editando, o token `read` escribiendo) |
 | 404 | `not_found` | doc inexistente o sin acceso |
 | 409 | `conflict` | conflicto de versión al guardar (reintentá) |
+| 429 | `too_many_requests` | superaste el rate limit (ver `Retry-After`) |
+
+---
+
+## Rate limiting
+
+Toda la API está limitada a **120 requests por minuto por usuario** (todos tus PATs
+y tu JWT comparten el mismo presupuesto). **Cada** respuesta incluye:
+
+```
+X-RateLimit-Limit: 120
+X-RateLimit-Remaining: 117
+X-RateLimit-Reset: 1719763200        # epoch (segundos) del reinicio de la ventana
+```
+
+Al excederlo → `429` con `Retry-After: <segundos>` (además de los `X-RateLimit-*`).
+Esperá ese tiempo y reintentá.
 
 ---
 
@@ -135,8 +172,20 @@ DOCSAPP_EMAIL=vos@ejemplo.com DOCSAPP_PASSWORD=••• \
 
 ---
 
+## Setup (self-host)
+
+Además de `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`, la
+autenticación por **PAT** requiere el secreto JWT de Supabase en el server (para
+mintear el token efímero que preserva la RLS). Agregá a `.env.local` y a Vercel:
+
+```
+SUPABASE_JWT_SECRET=<Dashboard → Settings → API → JWT Secret>
+```
+
+Es **server-only** (nunca `NEXT_PUBLIC`). Sin él, el JWT Bearer clásico sigue
+funcionando, pero los PAT devuelven `500`.
+
 ## Roadmap
 
-- **Personal Access Tokens (fase 2):** API keys estables/revocables desde `/profile`,
-  que no dependen del método de login (sirven para cuentas de Google sin password).
-- Rate limiting, paginación y webhooks.
+- Paginación cursor-based, webhooks y OpenAPI formal en `design/api/`.
+- Scopes por equipo (hoy el scope es read / read-write global).

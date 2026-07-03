@@ -1,5 +1,6 @@
 'use server'
 
+import { randomBytes } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
@@ -210,4 +211,98 @@ export async function searchDocuments(rawQuery: string): Promise<SearchResult[]>
     out.push({ id: row.id, title: row.title, team: row.teams?.name ?? '' })
   }
   return out
+}
+
+// ---------------------------------------------------------------------------
+// Links view-only públicos (Notion "Share to web", Fase 12).
+// ---------------------------------------------------------------------------
+
+type ShareResult = { ok: boolean; error?: string; token?: string }
+
+// Crea (o actualiza el scope de) el link público de un doc. Idempotente: si ya hay
+// uno activo lo reusa (actualizando include_subpages si cambió) y devuelve su token
+// — así el toggle "incluir subpáginas" del diálogo llama a esta misma action. El
+// token de 256 bits vive crudo en la URL (es el secreto). RLS `document_shares`
+// exige editor+ (un viewer recibe un error de policy). Devuelve el token para que
+// el cliente arme el link con su origin.
+export async function createShareLink(
+  docId: string,
+  includeSubpages: boolean,
+): Promise<ShareResult> {
+  const t = getDictionary(await getLocale())
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: t.errors.notAuthenticated }
+
+  // ¿Ya hay un link activo? Reusarlo (idempotente), ajustando el scope si cambió.
+  const { data: existing } = await supabase
+    .from('document_shares')
+    .select('id, token, include_subpages')
+    .eq('document_id', docId)
+    .is('revoked_at', null)
+    .maybeSingle()
+  if (existing) {
+    if ((existing.include_subpages as boolean) !== includeSubpages) {
+      await supabase
+        .from('document_shares')
+        .update({ include_subpages: includeSubpages })
+        .eq('id', existing.id as string)
+    }
+    revalidatePath(`/docs/${docId}`)
+    return { ok: true, token: existing.token as string }
+  }
+
+  const token = randomBytes(32).toString('base64url')
+  const { data, error } = await supabase
+    .from('document_shares')
+    .insert({
+      document_id: docId,
+      token,
+      include_subpages: includeSubpages,
+      created_by: user.id,
+    })
+    .select('token')
+
+  if (error) {
+    // Carrera: otro submit creó el link entre el check y el insert (índice único
+    // parcial activo) → devolver el que quedó.
+    if (error.code === '23505') {
+      const { data: raced } = await supabase
+        .from('document_shares')
+        .select('token')
+        .eq('document_id', docId)
+        .is('revoked_at', null)
+        .maybeSingle()
+      if (raced) {
+        revalidatePath(`/docs/${docId}`)
+        return { ok: true, token: raced.token as string }
+      }
+    }
+    return { ok: false, error: t.errors.noSharePermission }
+  }
+  if (!data || data.length === 0) return { ok: false, error: t.errors.noSharePermission }
+
+  revalidatePath(`/docs/${docId}`)
+  return { ok: true, token: (data[0] as { token: string }).token }
+}
+
+// Revoca (desactiva) el link público de un doc. Soft: set revoked_at → el link da
+// 404 y re-compartir genera un token nuevo. RLS exige editor+ (0 filas = sin permiso).
+export async function revokeShareLink(docId: string): Promise<ShareResult> {
+  const t = getDictionary(await getLocale())
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('document_shares')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('document_id', docId)
+    .is('revoked_at', null)
+    .select('id')
+
+  if (error) return { ok: false, error: error.message }
+  if (!data || data.length === 0) return { ok: false, error: t.errors.noSharePermission }
+
+  revalidatePath(`/docs/${docId}`)
+  return { ok: true }
 }

@@ -169,6 +169,7 @@ export const es = {
     inviteWrongEmail: 'Esta invitación es para otra dirección de email',
     noRenamePermission: 'No tenés permiso para renombrar el equipo.',
     noDeletePermission: 'Solo el owner puede borrar el equipo.',
+    noSharePermission: 'No tenés permiso para compartir este documento.',
   },
   teamSettings: {
     section: 'Nombre del equipo',
@@ -232,6 +233,26 @@ export const es = {
     nameRequired: 'Poné un nombre al token.',
     createError: 'No se pudo crear el token.',
     revokeError: 'No se pudo revocar el token.',
+  },
+  share: {
+    button: 'Compartir',
+    title: 'Compartir con la web',
+    description:
+      'Cualquiera con el link puede ver este documento en modo lectura, sin necesidad de cuenta.',
+    enable: 'Crear link público',
+    enabling: 'Creando…',
+    linkLabel: 'Link público',
+    copyLink: 'Copiar link',
+    open: 'Abrir',
+    includeSubpages: 'Incluir subpáginas',
+    revoke: 'Dejar de compartir',
+    confirmRevoke: '¿Dejar de compartir? El link va a dejar de funcionar.',
+    confirm: 'Sí, dejar de compartir',
+    cancel: 'Cancelar',
+    revokeError: 'No se pudo actualizar el link.',
+    readonlyBadge: 'Solo lectura',
+    pagesNav: 'Páginas',
+    poweredBy: 'Hecho con DocsApp',
   },
 }
 

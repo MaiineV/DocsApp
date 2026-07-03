@@ -169,6 +169,7 @@ export const en: Dictionary = {
     inviteWrongEmail: 'This invitation is for a different email address',
     noRenamePermission: 'You don’t have permission to rename the team.',
     noDeletePermission: 'Only the owner can delete the team.',
+    noSharePermission: 'You don’t have permission to share this document.',
   },
   teamSettings: {
     section: 'Team name',
@@ -232,5 +233,25 @@ export const en: Dictionary = {
     nameRequired: 'Give the token a name.',
     createError: 'Couldn’t create the token.',
     revokeError: 'Couldn’t revoke the token.',
+  },
+  share: {
+    button: 'Share',
+    title: 'Share to web',
+    description:
+      'Anyone with the link can view this document read-only, no account needed.',
+    enable: 'Create public link',
+    enabling: 'Creating…',
+    linkLabel: 'Public link',
+    copyLink: 'Copy link',
+    open: 'Open',
+    includeSubpages: 'Include subpages',
+    revoke: 'Stop sharing',
+    confirmRevoke: 'Stop sharing? The link will stop working.',
+    confirm: 'Yes, stop sharing',
+    cancel: 'Cancel',
+    revokeError: 'Couldn’t update the link.',
+    readonlyBadge: 'Read-only',
+    pagesNav: 'Pages',
+    poweredBy: 'Made with DocsApp',
   },
 }

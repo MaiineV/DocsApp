@@ -27,6 +27,17 @@ export async function renderMarkdown(blocks: PartialBlock[]): Promise<string> {
   return headlessEditor().blocksToMarkdownLossy(blocks as never)
 }
 
+// blocks -> HTML semántico (para la vista pública read-only /share). `blocksToHTMLLossy`
+// produce HTML "de exportación" limpio (h1/p/ul/blockquote/pre/a/img...) — más
+// article-like y fácil de estilar como prosa que el HTML interno del editor.
+// @menciones (docref) salen como texto plano por el `render` del serverSchema (no
+// linkean a /docs/<id>). async como `renderMarkdown` (robusto si el runtime
+// devolviera una Promise). El HTML DEBE sanitizarse antes de inyectarlo (ver
+// `lib/api/html.ts`): la página es pública y sin login.
+export async function renderHtml(blocks: PartialBlock[]): Promise<string> {
+  return headlessEditor().blocksToHTMLLossy(blocks as never)
+}
+
 export type WriteFormat = 'markdown' | 'json'
 
 // Resuelve el `content` entrante (string markdown o array de blocks) a

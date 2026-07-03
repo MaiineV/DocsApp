@@ -35,12 +35,16 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
-  const isAuthRoute =
+  // Rutas públicas (sin login): auth + los links view-only `/share/<token>`, que se
+  // resuelven por RPC anon (SECURITY DEFINER) sin sesión. Sin esto el proxy las
+  // redirigiría a /login antes de renderizar.
+  const isPublicRoute =
     path.startsWith('/login') ||
     path.startsWith('/signup') ||
-    path.startsWith('/auth')
+    path.startsWith('/auth') ||
+    path.startsWith('/share')
 
-  if (!user && !isAuthRoute) {
+  if (!user && !isPublicRoute) {
     const original = path + request.nextUrl.search // ruta+query original
     const url = request.nextUrl.clone()
     url.pathname = '/login'

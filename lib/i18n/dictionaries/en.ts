@@ -254,4 +254,14 @@ export const en: Dictionary = {
     pagesNav: 'Pages',
     poweredBy: 'Made with DocsApp',
   },
+  comments: {
+    toggle: 'Comments',
+    open: 'Open comments',
+    close: 'Close',
+    panelTitle: 'Comments',
+    empty: 'No comments yet. Select text in the document and add one.',
+    resolve: 'Resolve',
+    reopen: 'Reopen',
+    resolved: 'Resolved',
+  },
 }

@@ -254,6 +254,16 @@ export const es = {
     pagesNav: 'Páginas',
     poweredBy: 'Hecho con DocsApp',
   },
+  comments: {
+    toggle: 'Comentarios',
+    open: 'Abrir comentarios',
+    close: 'Cerrar',
+    panelTitle: 'Comentarios',
+    empty: 'Todavía no hay comentarios. Seleccioná texto en el documento y agregá uno.',
+    resolve: 'Resolver',
+    reopen: 'Reabrir',
+    resolved: 'Resuelto',
+  },
 }
 
 export type Dictionary = typeof es

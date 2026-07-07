@@ -8,7 +8,8 @@ import { getActiveTeam } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { casMergeYdoc } from '@/lib/yjs/persist'
 import { softDeleteDoc, restoreDoc, purgeDoc } from '@/lib/trash'
-import type { SearchResult } from '@/lib/types'
+import { toCommentUser, type CommentUser } from '@/lib/comments'
+import type { SearchResult, TeamMember } from '@/lib/types'
 
 // Crea un documento vacío y abre el editor. Si `parentId` viene, el doc es hijo
 // de ese (y hereda su team — el trigger exige mismo team); si no, va al team
@@ -211,6 +212,34 @@ export async function searchDocuments(rawQuery: string): Promise<SearchResult[]>
     out.push({ id: row.id, title: row.title, team: row.teams?.name ?? '' })
   }
   return out
+}
+
+// Resuelve autores de comentarios (id → nombre + avatar) para el UI de hilos de
+// BlockNote (`resolveUsers`). Se llama desde el editor (cliente) con los ids de los
+// autores; el `UserStore` de BlockNote cachea, así que corre pocas veces. Seguro:
+// el select a `documents` está gateado por RLS (hay que ser miembro para ver el
+// doc) y `list_team_members` por `is_team_member`; solo devuelve username+avatar.
+export async function resolveDocUsers(
+  docId: string,
+  userIds: string[],
+): Promise<CommentUser[]> {
+  if (userIds.length === 0) return []
+
+  const supabase = await createClient()
+  const { data: doc } = await supabase
+    .from('documents')
+    .select('team_id')
+    .eq('id', docId)
+    .maybeSingle()
+  if (!doc) return []
+
+  const { data: members } = await supabase.rpc('list_team_members', {
+    p_team_id: doc.team_id as string,
+  })
+  const want = new Set(userIds)
+  return ((members ?? []) as TeamMember[])
+    .filter((m) => want.has(m.user_id))
+    .map(toCommentUser)
 }
 
 // ---------------------------------------------------------------------------

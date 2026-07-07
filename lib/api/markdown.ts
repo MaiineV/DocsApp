@@ -1,12 +1,18 @@
 import '@/lib/api/dom-shim' // efecto secundario: monta el DOM. DEBE ir primero.
 import { BlockNoteEditor, type PartialBlock } from '@blocknote/core'
 import { serverSchema as schema } from '@/lib/blocknote-schema.server'
+import { commentMarkExtension } from '@/lib/comments-server'
 
 // Editor headless reutilizable para conversiones markdown <-> blocks. No se monta
 // en el DOM (solo normaliza/serializa). Singleton por proceso: las conversiones no
 // mutan su `document`, así que es seguro reusarlo entre requests.
+//
+// Registra la extensión de comentarios (store stub) para que el mark `comment`
+// exista en el schema: sin él, convertir el fragment de un doc con comentarios
+// tiraría TypeError (ver lib/comments-server.ts). Los docs sin comentarios
+// convierten idéntico y los exporters lossy descartan el mark → sin leak.
 function createHeadless() {
-  return BlockNoteEditor.create({ schema })
+  return BlockNoteEditor.create({ schema, extensions: [commentMarkExtension()] })
 }
 let headless: ReturnType<typeof createHeadless> | null = null
 export function headlessEditor() {

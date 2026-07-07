@@ -62,6 +62,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
 
       <CollabDocEditor
         docId={doc.id}
+        userId={user?.id ?? ''}
         initialTitle={doc.title}
         initialContent={doc.content}
         initialYdocState={doc.ydoc_state}

@@ -19,6 +19,7 @@ const Canvas = dynamic(() => import('@/components/blocknote-collab-canvas'), {
 
 type Props = {
   docId: string
+  userId: string
   initialTitle: string
   initialContent: string
   initialYdocState: string | null
@@ -31,6 +32,7 @@ const TITLE_DEBOUNCE_MS = 800
 
 export default function CollabDocEditor({
   docId,
+  userId,
   initialTitle,
   initialContent,
   initialYdocState,
@@ -98,6 +100,7 @@ export default function CollabDocEditor({
 
       <Canvas
         docId={docId}
+        userId={userId}
         initialContent={initialContent}
         initialYdocState={initialYdocState}
         editable={editable}

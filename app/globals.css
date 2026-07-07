@@ -222,3 +222,12 @@ body {
   padding: 0.5rem 0.75rem;
   text-align: left;
 }
+
+/* --- Comentarios (Fase 13) --- */
+/* En modo lectura (viewer: editor con contenteditable=false) ocultamos el resaltado
+   de los comment marks para que el documento se vea limpio; los editores sí ven el
+   texto comentado resaltado. La vista pública /share no depende de esto (es HTML
+   server-side lossy que ya descarta el mark). */
+.bn-editor[contenteditable='false'] .bn-thread-mark {
+  background: transparent !important;
+}

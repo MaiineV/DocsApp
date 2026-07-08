@@ -1,12 +1,11 @@
-import { Fragment } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getActiveTeam } from '@/lib/teams'
-import { listTeamDocs, type TeamDocRow } from '@/lib/documents'
-import { buildDocTree, type DocNode } from '@/lib/doc-tree'
-import { getDictionary, getLocale, type Locale } from '@/lib/i18n'
+import { listTeamDocs } from '@/lib/documents'
+import { getDictionary, getLocale } from '@/lib/i18n'
 import { fmt } from '@/lib/i18n/format'
 import NewDocButton from '@/components/new-doc-button'
+import DocTreeDnd from '@/components/doc-tree-dnd'
 import { buttonClasses } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -25,7 +24,6 @@ export default async function DocsPage({
     getLocale(),
   ])
   const t = getDictionary(locale)
-  const tree = buildDocTree(docs)
   const canEdit = team.role !== 'viewer'
 
   return (
@@ -54,7 +52,7 @@ export default async function DocsPage({
         </Alert>
       ) : null}
 
-      {tree.length === 0 ? (
+      {docs.length === 0 ? (
         <EmptyState
           className="mt-10"
           title={fmt(t.docs.emptyTitle, { team: team.name })}
@@ -69,51 +67,23 @@ export default async function DocsPage({
           }
         />
       ) : (
-        <ul className="mt-6 divide-y divide-border">
-          <DocTreeRows nodes={tree} depth={0} untitled={t.common.untitled} locale={locale} />
-        </ul>
+        // Mismo árbol interactivo que la sidebar (drag & drop + colapsar),
+        // variante 'index': rows grandes con fecha de actualización.
+        <DocTreeDnd
+          variant="index"
+          locale={locale}
+          activeDocId={null}
+          canEdit={canEdit}
+          docs={docs.map((d) => ({
+            id: d.id,
+            title: d.title,
+            icon: d.icon,
+            parentId: d.parent_id,
+            position: d.position,
+            updatedAt: d.updated_at,
+          }))}
+        />
       )}
     </div>
-  )
-}
-
-// Lista jerárquica: cada doc con sus hijos anidados (indentados por profundidad),
-// igual que el árbol del sidebar.
-function DocTreeRows({
-  nodes,
-  depth,
-  untitled,
-  locale,
-}: {
-  nodes: DocNode<TeamDocRow>[]
-  depth: number
-  untitled: string
-  locale: Locale
-}) {
-  return (
-    <>
-      {nodes.map((node) => (
-        <Fragment key={node.id}>
-          <li>
-            <Link
-              href={`/docs/${node.id}`}
-              className="flex items-center justify-between py-3 transition-colors hover:bg-surface-sunken"
-              style={{ paddingLeft: depth * 20 }}
-            >
-              <span className="truncate font-medium">
-                {depth > 0 ? <span className="mr-1.5 text-subtle">└</span> : null}
-                {node.title || untitled}
-              </span>
-              <span className="shrink-0 pl-3 text-xs text-subtle">
-                {new Date(node.updated_at).toLocaleDateString(locale)}
-              </span>
-            </Link>
-          </li>
-          {node.children.length > 0 ? (
-            <DocTreeRows nodes={node.children} depth={depth + 1} untitled={untitled} locale={locale} />
-          ) : null}
-        </Fragment>
-      ))}
-    </>
   )
 }

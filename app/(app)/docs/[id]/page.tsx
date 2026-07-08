@@ -64,6 +64,7 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
         docId={doc.id}
         userId={user?.id ?? ''}
         initialTitle={doc.title}
+        initialIcon={doc.icon}
         initialContent={doc.content}
         initialYdocState={doc.ydoc_state}
         editable={canEdit}

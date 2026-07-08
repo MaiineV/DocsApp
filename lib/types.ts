@@ -24,9 +24,13 @@ export type Document = {
   id: string
   team_id: string
   title: string
+  // Emoji del documento (picker del título). Null = sin ícono.
+  icon: string | null
   content: string
   created_by: string | null
   parent_id: string | null
+  // Orden manual entre hermanos (fractional indexing, menor = más arriba).
+  position: number
   created_at: string
   updated_at: string
 }
@@ -48,7 +52,7 @@ export type Profile = {
 }
 
 // Resultado de búsqueda de documentos (Fase 10).
-export type SearchResult = { id: string; title: string; team: string }
+export type SearchResult = { id: string; title: string; icon: string | null; team: string }
 
 // Scope de un Personal Access Token (Fase 7.2): read (GET) o read_write (todo).
 export type ApiTokenScope = 'read' | 'read_write'

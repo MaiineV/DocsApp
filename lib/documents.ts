@@ -8,7 +8,7 @@ export const getDocument = cache(async (id: string) => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('documents')
-    .select('id, title, content, team_id, updated_at, ydoc_state, parent_id')
+    .select('id, title, icon, content, team_id, updated_at, ydoc_state, parent_id')
     .eq('id', id)
     .is('deleted_at', null) // un doc en la papelera no se abre
     .maybeSingle()
@@ -18,8 +18,10 @@ export const getDocument = cache(async (id: string) => {
 export type TeamDocRow = {
   id: string
   title: string
+  icon: string | null
   parent_id: string | null
   updated_at: string
+  position: number
 }
 
 // Docs del team (para el árbol del sidebar y la lista de @menciones). RLS:
@@ -28,9 +30,9 @@ export const listTeamDocs = cache(async (teamId: string): Promise<TeamDocRow[]> 
   const supabase = await createClient()
   const { data } = await supabase
     .from('documents')
-    .select('id, title, parent_id, updated_at')
+    .select('id, title, icon, parent_id, updated_at, position')
     .eq('team_id', teamId)
     .is('deleted_at', null)
-    .order('updated_at', { ascending: false })
+    .order('position', { ascending: true })
   return (data ?? []) as TeamDocRow[]
 })

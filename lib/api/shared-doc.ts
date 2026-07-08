@@ -16,6 +16,7 @@ export type SharedDoc = {
   includeSubpages: boolean
   id: string
   title: string
+  icon: string | null
   html: string
   parentId: string | null
 }
@@ -25,6 +26,7 @@ type SharedDocRow = {
   include_subpages: boolean
   id: string
   title: string
+  icon: string | null
   content: string | null
   ydoc_state: string | null
   parent_id: string | null
@@ -56,15 +58,22 @@ export const fetchSharedDoc = cache(async function fetchSharedDoc(
     includeSubpages: row.include_subpages,
     id: row.id,
     title: row.title,
+    icon: row.icon,
     html,
     parentId: row.parent_id,
   }
 })
 
-export type SharedTreeRow = { id: string; title: string; parent_id: string | null }
+export type SharedTreeRow = {
+  id: string
+  title: string
+  icon: string | null
+  parent_id: string | null
+  position: number
+}
 
-// Filas (id,title,parent_id) del set compartido para el nav público (raíz +
-// descendientes si include_subpages). [] si el token es inválido/revocado.
+// Filas (id,title,parent_id,position) del set compartido para el nav público
+// (raíz + descendientes si include_subpages). [] si el token es inválido/revocado.
 export async function fetchSharedTree(token: string): Promise<SharedTreeRow[]> {
   const supabase = createAnonApiClient()
   const { data } = await supabase.rpc('get_shared_tree', { p_token: token })

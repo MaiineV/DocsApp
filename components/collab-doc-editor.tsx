@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import dynamic from 'next/dynamic'
-import { persistTitle } from '@/app/(app)/docs/actions'
+import { persistIcon, persistTitle } from '@/app/(app)/docs/actions'
+import EmojiPicker from '@/components/emoji-picker'
 import { useI18n } from '@/components/i18n-provider'
 import type { CollabUser } from '@/lib/collab'
 import type { SaveState } from '@/components/blocknote-collab-canvas'
@@ -21,6 +22,7 @@ type Props = {
   docId: string
   userId: string
   initialTitle: string
+  initialIcon: string | null
   initialContent: string
   initialYdocState: string | null
   editable: boolean
@@ -34,6 +36,7 @@ export default function CollabDocEditor({
   docId,
   userId,
   initialTitle,
+  initialIcon,
   initialContent,
   initialYdocState,
   editable,
@@ -42,6 +45,7 @@ export default function CollabDocEditor({
 }: Props) {
   const { t } = useI18n()
   const [title, setTitle] = useState(initialTitle)
+  const [icon, setIcon] = useState(initialIcon)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -76,21 +80,46 @@ export default function CollabDocEditor({
 
   useEffect(() => () => { if (titleTimer.current) clearTimeout(titleTimer.current) }, [])
 
+  // El emoji se guarda al click (sin debounce: es una elección puntual, no tipeo).
+  const onIconSelect = useCallback(
+    async (value: string | null) => {
+      setIcon(value)
+      setSaveState('saving')
+      const res = await persistIcon(docId, value)
+      setSaveState(res.ok ? 'saved' : 'error')
+    },
+    [docId],
+  )
+
   return (
     <div className="mt-6">
-      <div className="flex items-baseline justify-between gap-4">
-        {editable ? (
-          <input
-            value={title}
-            onChange={onTitleChange}
-            maxLength={200}
-            aria-label={t.docs.titlePlaceholder}
-            placeholder={t.docs.titlePlaceholder}
-            className="w-full border-0 bg-transparent text-3xl font-semibold tracking-tight text-fg outline-none placeholder:text-subtle"
-          />
-        ) : (
-          <h1 className="text-3xl font-semibold tracking-tight text-fg">{title}</h1>
-        )}
+      {/* "Agregar ícono" arriba del título cuando no hay emoji (estilo Notion). */}
+      {editable && !icon ? (
+        <div className="mb-1">
+          <EmojiPicker value={null} onSelect={onIconSelect} />
+        </div>
+      ) : null}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {editable && icon ? <EmojiPicker value={icon} onSelect={onIconSelect} /> : null}
+          {!editable && icon ? (
+            <span aria-hidden className="shrink-0 text-3xl">
+              {icon}
+            </span>
+          ) : null}
+          {editable ? (
+            <input
+              value={title}
+              onChange={onTitleChange}
+              maxLength={200}
+              aria-label={t.docs.titlePlaceholder}
+              placeholder={t.docs.titlePlaceholder}
+              className="w-full border-0 bg-transparent text-3xl font-semibold tracking-tight text-fg outline-none placeholder:text-subtle"
+            />
+          ) : (
+            <h1 className="truncate text-3xl font-semibold tracking-tight text-fg">{title}</h1>
+          )}
+        </div>
         {editable ? (
           <SaveBadge state={saveState} />
         ) : (

@@ -34,6 +34,31 @@ describe('buildDocTree', () => {
     const tree = buildDocTree([{ id: 'x', title: 'X', parent_id: null, updated_at: '2026' }])
     expect(tree[0].updated_at).toBe('2026')
   })
+
+  it('sorts siblings by position ascending when present', () => {
+    const tree = buildDocTree([
+      { id: '1', title: 'Alpha', parent_id: null, position: 2048 },
+      { id: '2', title: 'Zeta', parent_id: null, position: 1024 },
+      { id: '3', title: 'Mid', parent_id: null, position: 1536 },
+    ])
+    expect(tree.map((n) => n.id)).toEqual(['2', '3', '1'])
+  })
+
+  it('falls back to title when positions tie', () => {
+    const tree = buildDocTree([
+      { id: '1', title: 'Zeta', parent_id: null, position: 1024 },
+      { id: '2', title: 'Alpha', parent_id: null, position: 1024 },
+    ])
+    expect(tree.map((n) => n.title)).toEqual(['Alpha', 'Zeta'])
+  })
+
+  it('puts rows without position after positioned ones', () => {
+    const tree = buildDocTree([
+      { id: '1', title: 'Alpha', parent_id: null },
+      { id: '2', title: 'Zeta', parent_id: null, position: 9999 },
+    ])
+    expect(tree.map((n) => n.id)).toEqual(['2', '1'])
+  })
 })
 
 describe('collectDescendantIds', () => {

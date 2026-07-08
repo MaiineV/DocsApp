@@ -136,6 +136,7 @@ export default function DocSearch({
                   }`}
                 >
                   <span className="w-full truncate text-sm text-fg">
+                    {r.icon ? <span className="mr-1.5">{r.icon}</span> : null}
                     {r.title || t.common.untitled}
                   </span>
                   {r.team ? <span className="text-xs text-subtle">{r.team}</span> : null}

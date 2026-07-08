@@ -27,10 +27,24 @@ test('comentar una selección → persiste tras reload → resolver', async ({ p
   await page.getByRole('button', { name: 'Add comment' }).click()
 
   // Escribir el comentario en el composer flotante (editor anidado) y guardar.
+  // Antes del Save se arma la espera del autosave: el hilo vive en el Y.Doc y
+  // persiste por persistYdoc (server action, debounce 2s) — sin esperar ese POST,
+  // el reload corre una race contra el beacon de pagehide y el comentario puede
+  // perderse. Se distingue del resto de las actions por el tamaño del payload
+  // (lleva el snapshot base64 del doc; el badge "Saving…" dura ~200ms y el
+  // polling de expect() puede no verlo).
   const composer = page.locator('.bn-comment-editor [contenteditable="true"]')
   await composer.click()
   await page.keyboard.type(commentText)
+  const persisted = page.waitForResponse(
+    (r) =>
+      r.request().method() === 'POST' &&
+      /\/docs\/[0-9a-f-]+/.test(r.url()) &&
+      (r.request().postData()?.length ?? 0) > 1000,
+    { timeout: 15_000 },
+  )
   await page.getByRole('button', { name: 'Save' }).click()
+  await persisted
 
   // El texto quedó marcado como comentado y el toggle muestra 1 hilo abierto.
   await expect(page.locator('.bn-thread-mark').first()).toBeVisible({ timeout: 10_000 })
@@ -49,6 +63,10 @@ test('comentar una selección → persiste tras reload → resolver', async ({ p
   // Resolver el hilo desde el panel → BlockNote lo marca como resuelto.
   await panel.getByRole('button', { name: 'Resolve' }).click()
   await expect(panel.getByText(/resolved/i)).toBeVisible({ timeout: 10_000 })
+
+  // Cerrar el panel con su botón (es un overlay fijo: tapa el toggle y el Delete).
+  await panel.getByRole('button', { name: 'Close' }).click()
+  await expect(panel).toBeHidden()
 
   // Cleanup: borrar el doc.
   await page.getByRole('button', { name: 'Delete' }).click()

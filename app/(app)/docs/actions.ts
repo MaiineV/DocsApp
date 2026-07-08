@@ -8,6 +8,7 @@ import { getActiveTeam } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { casMergeYdoc } from '@/lib/yjs/persist'
 import { softDeleteDoc, restoreDoc, purgeDoc } from '@/lib/trash'
+import { positionAfter, POSITION_GAP } from '@/lib/doc-position'
 import { toCommentUser, type CommentUser } from '@/lib/comments'
 import type { SearchResult, TeamMember } from '@/lib/types'
 
@@ -77,22 +78,63 @@ export async function createDocument(parentId: string | null = null, idempotency
   redirect(`/docs/${data.id}`)
 }
 
-// Mueve un documento bajo otro padre (o a raíz con null). El trigger DB rechaza
-// padre de otro team / auto-padre / ciclo; la RLS exige editor+.
+// Mueve un documento bajo otro padre (o a raíz con null), ubicándolo justo
+// DESPUÉS del hermano `afterId` (null = primer lugar). La posición se calcula
+// server-side (midpoint entre vecinos) → robusto ante árboles stale del cliente;
+// si el gap float64 se agota, renormaliza vía RPC y recalcula. El trigger DB
+// rechaza padre de otro team / auto-padre / ciclo; la RLS exige editor+ (0 filas
+// = sin permiso). OJO share: mover un doc adentro/afuera de una raíz compartida
+// con subpáginas lo publica/despublica (get_shared_tree recorre parent_id).
 export async function moveDocument(
   id: string,
   newParentId: string | null,
+  afterId: string | null = null,
 ): Promise<{ ok: boolean; error?: string }> {
+  const t = getDictionary(await getLocale())
   const supabase = await createClient()
+
+  const { data: doc } = await supabase
+    .from('documents')
+    .select('team_id')
+    .eq('id', id)
+    .maybeSingle()
+  if (!doc) return { ok: false, error: t.errors.docMoveFailed }
+  const teamId = doc.team_id as string
+
+  const fetchSiblings = async () => {
+    let q = supabase
+      .from('documents')
+      .select('id, position')
+      .eq('team_id', teamId)
+      .is('deleted_at', null)
+      .neq('id', id)
+      .order('position', { ascending: true })
+    q = newParentId === null ? q.is('parent_id', null) : q.eq('parent_id', newParentId)
+    const { data } = await q
+    return (data ?? []) as { id: string; position: number }[]
+  }
+
+  let siblings = await fetchSiblings()
+  let position = positionAfter(siblings, afterId)
+  if (position === null) {
+    // Gap float64 agotado en ese hueco → renormalizar el grupo y recalcular.
+    await supabase.rpc('resequence_sibling_positions', {
+      p_team_id: teamId,
+      p_parent_id: newParentId,
+    })
+    siblings = await fetchSiblings()
+    position = positionAfter(siblings, afterId) ?? (siblings.length + 1) * POSITION_GAP
+  }
+
   const { data, error } = await supabase
     .from('documents')
-    .update({ parent_id: newParentId })
+    .update({ parent_id: newParentId, position })
     .eq('id', id)
     .select('id')
 
   if (error) return { ok: false, error: error.message } // trigger: ciclo/mismo-team
   if (!data || data.length === 0) {
-    return { ok: false, error: getDictionary(await getLocale()).errors.noEditPermission }
+    return { ok: false, error: t.errors.noEditPermission }
   }
 
   revalidatePath('/docs', 'layout')
@@ -116,6 +158,7 @@ export async function persistYdoc(
 
 // Guarda el título (LWW). El título no es colaborativo en vivo en Fase 2; cada
 // editor lo guarda por su cuenta. RLS (editor+) gatea: 0 filas = sin permiso.
+// `'layout'` para que el árbol del sidebar (vive en el layout) muestre el rename.
 export async function persistTitle(
   id: string,
   title: string,
@@ -129,11 +172,37 @@ export async function persistTitle(
 
   if (error) return { ok: false, error: error.message }
   if (!data || data.length === 0) {
-    return { ok: false, error: 'No tenés permiso para editar este documento.' }
+    return { ok: false, error: getDictionary(await getLocale()).errors.noEditPermission }
   }
 
-  revalidatePath('/docs')
-  revalidatePath(`/docs/${id}`)
+  revalidatePath('/docs', 'layout')
+  return { ok: true }
+}
+
+// Guarda el emoji/ícono del doc (LWW, mismo patrón que persistTitle). null =
+// quitar ícono. RLS (editor+) gatea: 0 filas = sin permiso.
+export async function persistIcon(
+  id: string,
+  icon: string | null,
+): Promise<{ ok: boolean; error?: string }> {
+  const value = icon?.trim() || null
+  if (value && value.length > 16) {
+    return { ok: false, error: getDictionary(await getLocale()).errors.noEditPermission }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('documents')
+    .update({ icon: value })
+    .eq('id', id)
+    .select('id')
+
+  if (error) return { ok: false, error: error.message }
+  if (!data || data.length === 0) {
+    return { ok: false, error: getDictionary(await getLocale()).errors.noEditPermission }
+  }
+
+  revalidatePath('/docs', 'layout')
   return { ok: true }
 }
 
@@ -181,7 +250,7 @@ export async function searchDocuments(rawQuery: string): Promise<SearchResult[]>
   if (q.length < 2) return []
 
   const supabase = await createClient()
-  const fields = 'id, title, teams(name), updated_at'
+  const fields = 'id, title, icon, teams(name), updated_at'
 
   const [fts, byTitle] = await Promise.all([
     supabase
@@ -200,7 +269,7 @@ export async function searchDocuments(rawQuery: string): Promise<SearchResult[]>
       .limit(20),
   ])
 
-  type Row = { id: string; title: string; teams: { name: string } | null }
+  type Row = { id: string; title: string; icon: string | null; teams: { name: string } | null }
   const seen = new Set<string>()
   const out: SearchResult[] = []
   for (const row of [
@@ -209,7 +278,7 @@ export async function searchDocuments(rawQuery: string): Promise<SearchResult[]>
   ]) {
     if (seen.has(row.id) || out.length >= 20) continue
     seen.add(row.id)
-    out.push({ id: row.id, title: row.title, team: row.teams?.name ?? '' })
+    out.push({ id: row.id, title: row.title, icon: row.icon, team: row.teams?.name ?? '' })
   }
   return out
 }

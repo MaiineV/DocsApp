@@ -33,7 +33,13 @@ export default async function DocLayout({
   return (
     <div className="relative flex flex-1 overflow-hidden">
       <DocSidebar
-        docs={teamDocs.map((d) => ({ id: d.id, title: d.title, parentId: d.parent_id }))}
+        docs={teamDocs.map((d) => ({
+          id: d.id,
+          title: d.title,
+          icon: d.icon,
+          parentId: d.parent_id,
+          position: d.position,
+        }))}
         activeDocId={id}
         canEdit={canEdit}
         initialCollapsed={collapsed}

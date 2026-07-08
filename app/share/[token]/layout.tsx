@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { fetchSharedTree } from '@/lib/api/shared-doc'
+import { fetchSharedTree, type SharedTreeRow } from '@/lib/api/shared-doc'
 import { buildDocTree, type DocNode } from '@/lib/doc-tree'
 import { getDictionary, getLocale } from '@/lib/i18n'
 
@@ -59,7 +59,7 @@ function ShareNav({
   rootId,
   untitled,
 }: {
-  nodes: DocNode[]
+  nodes: DocNode<SharedTreeRow>[]
   token: string
   rootId: string | null
   untitled: string
@@ -72,6 +72,7 @@ function ShareNav({
             href={n.id === rootId ? `/share/${token}` : `/share/${token}/${n.id}`}
             className="block truncate rounded px-2 py-1 text-muted transition-colors hover:bg-active hover:text-fg"
           >
+            {n.icon ? <span className="mr-1.5">{n.icon}</span> : null}
             {n.title || untitled}
           </Link>
           {n.children.length > 0 ? (

@@ -1,11 +1,18 @@
 // Construcción del árbol de documentos a partir de la lista plana. Puro
 // (sin React/Supabase) → server y client.
 
-export type DocRow = { id: string; title: string; parent_id: string | null }
+export type DocRow = {
+  id: string
+  title: string
+  parent_id: string | null
+  position?: number | null
+}
 export type DocNode<T extends DocRow = DocRow> = T & { children: DocNode<T>[] }
 
 // O(n) con un Map (sin .find() en loops). Un doc cuyo padre no está en la lista
-// (cross-team / borrado) se trata como raíz. Hermanos ordenados por título.
+// (cross-team / borrado) se trata como raíz. Hermanos ordenados por `position`
+// (orden manual del drag & drop); filas sin position caen al final, y el título
+// desempata (estable ante posiciones iguales por moves concurrentes).
 // Genérico → preserva campos extra de la fila (p.ej. updated_at).
 export function buildDocTree<T extends DocRow>(rows: T[]): DocNode<T>[] {
   const byId = new Map<string, DocNode<T>>()
@@ -19,7 +26,12 @@ export function buildDocTree<T extends DocRow>(rows: T[]): DocNode<T>[] {
   }
 
   const sortRec = (nodes: DocNode<T>[]) => {
-    nodes.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+    nodes.sort((a, b) => {
+      const pa = a.position ?? Number.POSITIVE_INFINITY
+      const pb = b.position ?? Number.POSITIVE_INFINITY
+      if (pa !== pb) return pa - pb
+      return (a.title || '').localeCompare(b.title || '')
+    })
     for (const n of nodes) sortRec(n.children)
   }
   sortRec(roots)

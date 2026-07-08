@@ -8,7 +8,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
 
-type TrashItem = { id: string; title: string; deleted_at: string }
+type TrashItem = { id: string; title: string; icon: string | null; deleted_at: string }
 
 export default function TrashList({
   items,
@@ -68,7 +68,10 @@ function TrashRow({
     <li className="py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-fg">{item.title || t.common.untitled}</p>
+          <p className="truncate text-sm font-medium text-fg">
+            {item.icon ? <span className="mr-1.5">{item.icon}</span> : null}
+            {item.title || t.common.untitled}
+          </p>
           <p className="text-xs text-subtle">
             {fmt(t.trash.deletedAt, { date: new Date(item.deleted_at).toLocaleDateString(locale) })}
           </p>

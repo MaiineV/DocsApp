@@ -89,9 +89,11 @@ Equipos del usuario + rol.
 ```
 
 ### `GET /teams/{teamId}/documents`
-Docs del equipo (plano; usá `parent_id` para reconstruir el árbol).
+Docs del equipo (plano; usá `parent_id` para reconstruir el árbol y `position`
+—ascendente— para ordenar hermanos). `icon` es el emoji del doc (o `null`).
 ```json
-{ "documents": [ { "id": "uuid", "title": "Specs", "parent_id": null, "updated_at": "..." } ] }
+{ "documents": [ { "id": "uuid", "title": "Specs", "icon": "📄", "parent_id": null,
+  "position": 1024, "updated_at": "..." } ] }
 ```
 
 ### `POST /teams/{teamId}/documents`
@@ -100,28 +102,29 @@ Crea un doc. Requiere rol `editor+` en el equipo.
 // body
 {
   "title": "Notas de la API",        // opcional
+  "icon": "📄",                       // opcional (emoji, máx. 16 chars)
   "parent_id": null,                  // opcional (debe ser del mismo team)
   "content": "# Hola\n\ntexto...",   // opcional (siembra el cuerpo)
   "format": "markdown"                // opcional
 }
 ```
-→ `201` `{ "document": { "id", "title", "team_id", "parent_id", "updated_at" } }`
+→ `201` `{ "document": { "id", "title", "icon", "team_id", "parent_id", "position", "updated_at" } }`
 
 ### `GET /documents/{id}?format=markdown`
 Lee un doc + cuerpo.
 ```json
-{ "document": { "id": "...", "title": "...", "team_id": "...", "parent_id": null,
-  "updated_at": "...", "format": "markdown", "content": "# Hola\n\ntexto..." } }
+{ "document": { "id": "...", "title": "...", "icon": null, "team_id": "...", "parent_id": null,
+  "position": 1024, "updated_at": "...", "format": "markdown", "content": "# Hola\n\ntexto..." } }
 ```
 (`format=json` → `content` es un array de bloques.)
 
 ### `PATCH /documents/{id}`
-Edita título y/o cuerpo. Requiere `editor+`. El cuerpo se **reemplaza** y se emite en
-vivo por Realtime a los editores abiertos.
+Edita título, ícono y/o cuerpo. Requiere `editor+`. El cuerpo se **reemplaza** y se
+emite en vivo por Realtime a los editores abiertos. `"icon": null` quita el emoji.
 ```jsonc
-{ "title": "Nuevo título", "content": "# Reemplazado\n\n...", "format": "markdown" }
+{ "title": "Nuevo título", "icon": "🚀", "content": "# Reemplazado\n\n...", "format": "markdown" }
 ```
-→ `200` `{ "ok": true, "titleUpdated": true, "bodyUpdated": true, "broadcast": true, "version": 5 }`
+→ `200` `{ "ok": true, "titleUpdated": true, "iconUpdated": true, "bodyUpdated": true, "broadcast": true, "version": 5 }`
 
 ### `DELETE /documents/{id}`
 Manda el doc **a la papelera** (soft-delete) junto con sus subpáginas (cascada). Es **recuperable** desde

@@ -18,8 +18,21 @@ test('compartir doc → ver deslogueado → revocar → 404', async ({ page, bro
   const body = page.locator('[contenteditable="true"]').first()
   await body.click()
   await page.keyboard.type(bodyText)
+  // El autosave del CUERPO (persistYdoc, debounce 2s, payload grande con el
+  // snapshot base64) debe commitear ANTES de crear el link: el badge "Saved ✓"
+  // puede venir del guardado del TÍTULO (debounce 0.8s) con el cuerpo todavía
+  // en vuelo → la vista pública anon saldría sin contenido.
+  // Se lo distingue del guardado del título porque solo persistYdoc lleva el
+  // JSON de bloques ("paragraph") en el payload.
+  const persisted = page.waitForResponse(
+    (r) =>
+      r.request().method() === 'POST' &&
+      new URL(r.url()).pathname.startsWith('/docs') &&
+      (r.request().postData()?.includes('paragraph') ?? false),
+    { timeout: 15_000 },
+  )
   await expect(body).toContainText(bodyText)
-  await expect(page.getByText('Saved ✓')).toBeVisible({ timeout: 15_000 })
+  await persisted
 
   // Abrir el diálogo Compartir (summary de un <details>) y crear el link público.
   await page.locator('summary', { hasText: 'Share' }).click()
@@ -46,9 +59,14 @@ test('compartir doc → ver deslogueado → revocar → 404', async ({ page, bro
     await anon.close()
   }
 
-  // Revocar el link (confirm inline).
+  // Revocar el link (confirm inline). El diálogo vuelve al estado "sin link"
+  // recién cuando la server action resolvió OK → esperarlo evita la race de
+  // visitar el link público antes de que el revoke commitee en la DB.
   await page.getByRole('button', { name: 'Stop sharing' }).click()
   await page.getByRole('button', { name: 'Yes, stop sharing' }).click()
+  await expect(page.getByRole('button', { name: 'Create public link' })).toBeVisible({
+    timeout: 10_000,
+  })
 
   // El link público ahora da 404.
   const anon2 = await browser.newContext()

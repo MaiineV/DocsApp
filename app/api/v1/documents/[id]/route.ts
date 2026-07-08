@@ -22,7 +22,7 @@ export async function GET(request: Request, { params }: Params): Promise<Respons
 
     const { data: doc, error } = await supabase
       .from('documents')
-      .select('id, title, team_id, parent_id, updated_at, content, ydoc_state')
+      .select('id, title, icon, team_id, parent_id, position, updated_at, content, ydoc_state')
       .eq('id', id)
       .is('deleted_at', null)
       .maybeSingle()
@@ -34,8 +34,10 @@ export async function GET(request: Request, { params }: Params): Promise<Respons
       document: {
         id: doc.id,
         title: doc.title,
+        icon: doc.icon,
         team_id: doc.team_id,
         parent_id: doc.parent_id,
+        position: doc.position,
         updated_at: doc.updated_at,
         format,
         content,
@@ -47,11 +49,12 @@ export async function GET(request: Request, { params }: Params): Promise<Respons
 const patchSchema = z
   .object({
     title: z.string().max(500).optional(),
+    icon: z.string().max(16).nullable().optional(),
     content: z.union([z.string(), z.array(z.unknown())]).optional(),
     format: z.enum(['markdown', 'json']).optional(),
   })
-  .refine((d) => d.title !== undefined || d.content !== undefined, {
-    message: 'Nada para actualizar: enviá title y/o content.',
+  .refine((d) => d.title !== undefined || d.icon !== undefined || d.content !== undefined, {
+    message: 'Nada para actualizar: enviá title, icon y/o content.',
   })
 
 const STATUS_TO_CODE: Record<number, ApiErrorCode> = {
@@ -77,24 +80,29 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
     if (!parsed.success) {
       return fail('bad_request', parsed.error.issues[0]?.message ?? 'Body inválido.')
     }
-    const { title, content, format } = parsed.data
+    const { title, icon, content, format } = parsed.data
 
     let titleUpdated = false
+    let iconUpdated = false
     let bodyUpdated = false
     let broadcast = false
     let version: number | undefined
 
-    if (title !== undefined) {
+    if (title !== undefined || icon !== undefined) {
+      const patch: { title?: string; icon?: string | null } = {}
+      if (title !== undefined) patch.title = title.trim()
+      if (icon !== undefined) patch.icon = icon?.trim() || null
       const { data, error } = await supabase
         .from('documents')
-        .update({ title: title.trim() })
+        .update(patch)
         .eq('id', id)
         .select('id')
       if (error) return fail('internal', error.message)
       if (!data || data.length === 0) {
         return fail('forbidden', 'Sin permiso para editar este documento (o no existe).')
       }
-      titleUpdated = true
+      titleUpdated = title !== undefined
+      iconUpdated = icon !== undefined
     }
 
     if (content !== undefined) {
@@ -115,7 +123,7 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
 
     revalidatePath('/docs', 'layout')
     revalidatePath(`/docs/${id}`)
-    return ok({ ok: true, titleUpdated, bodyUpdated, broadcast, version })
+    return ok({ ok: true, titleUpdated, iconUpdated, bodyUpdated, broadcast, version })
   })
 }
 

@@ -1,16 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import NewDocButton from '@/components/new-doc-button'
 import DocSearch from '@/components/doc-search'
-import { buildDocTree, type DocNode } from '@/lib/doc-tree'
+import DocTreeDnd, { type SidebarDoc } from '@/components/doc-tree-dnd'
 import { useI18n } from '@/components/i18n-provider'
 
 const COOKIE = 'docs_sidebar_collapsed'
 const COOKIE_MAXAGE = 60 * 60 * 24 * 365
-
-type SidebarDoc = { id: string; title: string; parentId: string | null }
 
 export default function DocSidebar({
   docs,
@@ -30,8 +27,6 @@ export default function DocSidebar({
   //    la cookie) para no tapar el editor al entrar en una pantalla chica.
   const [collapsed, setCollapsed] = useState(initialCollapsed)
   const [mobileOpen, setMobileOpen] = useState(false)
-  // Árbol derivado en render (no en state).
-  const tree = buildDocTree(docs.map((d) => ({ id: d.id, title: d.title, parent_id: d.parentId })))
 
   function setCookie(next: boolean) {
     document.cookie = `${COOKIE}=${next ? '1' : '0'};path=/;max-age=${COOKIE_MAXAGE};samesite=lax`
@@ -95,23 +90,7 @@ export default function DocSidebar({
             />
           ) : null}
 
-          {tree.length === 0 ? (
-            <p className="mt-2 px-2 text-xs text-subtle">{t.sidebar.empty}</p>
-          ) : (
-            <ul className="mt-1">
-              {tree.map((node) => (
-                <DocTreeNode
-                  key={node.id}
-                  node={node}
-                  activeDocId={activeDocId}
-                  canEdit={canEdit}
-                  depth={0}
-                  untitled={t.common.untitled}
-                  newChildLabel={t.sidebar.newChild}
-                />
-              ))}
-            </ul>
-          )}
+          <DocTreeDnd docs={docs} activeDocId={activeDocId} canEdit={canEdit} />
         </div>
       </aside>
 
@@ -139,78 +118,5 @@ export default function DocSidebar({
         </button>
       ) : null}
     </>
-  )
-}
-
-function DocTreeNode({
-  node,
-  activeDocId,
-  canEdit,
-  depth,
-  untitled,
-  newChildLabel,
-}: {
-  node: DocNode
-  activeDocId: string
-  canEdit: boolean
-  depth: number
-  untitled: string
-  newChildLabel: string
-}) {
-  const [open, setOpen] = useState(true)
-  const hasChildren = node.children.length > 0
-  const isActive = node.id === activeDocId
-
-  return (
-    <li>
-      <div
-        className={`group flex items-center gap-1 rounded-md pr-1 text-sm transition-colors ${
-          isActive ? 'bg-active font-medium' : 'hover:bg-ghost'
-        }`}
-        style={{ paddingLeft: depth * 12 + 4 }}
-      >
-        {hasChildren ? (
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            aria-label={open ? '−' : '+'}
-            className="inline-grid min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded text-[10px] text-subtle transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0 sm:min-w-0 sm:p-0.5"
-          >
-            {open ? '▾' : '▸'}
-          </button>
-        ) : (
-          <span className="w-[18px] shrink-0 max-sm:hidden" />
-        )}
-
-        <Link href={`/docs/${node.id}`} className="flex-1 truncate py-2 sm:py-1.5">
-          {node.title || untitled}
-        </Link>
-
-        {canEdit ? (
-          <NewDocButton
-            parentId={node.id}
-            ariaLabel={newChildLabel}
-            label="+"
-            className="shrink-0 rounded p-2 text-subtle opacity-100 transition-opacity hover:bg-ghost hover:text-fg disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-0.5 sm:opacity-0 sm:group-hover:opacity-100"
-          />
-        ) : null}
-      </div>
-
-      {hasChildren && open ? (
-        <ul>
-          {node.children.map((child) => (
-            <DocTreeNode
-              key={child.id}
-              node={child}
-              activeDocId={activeDocId}
-              canEdit={canEdit}
-              depth={depth + 1}
-              untitled={untitled}
-              newChildLabel={newChildLabel}
-            />
-          ))}
-        </ul>
-      ) : null}
-    </li>
   )
 }

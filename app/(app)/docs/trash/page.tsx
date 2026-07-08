@@ -17,12 +17,17 @@ export default async function TrashPage() {
 
   const { data } = await supabase
     .from('documents')
-    .select('id, title, deleted_at')
+    .select('id, title, icon, deleted_at')
     .eq('team_id', team.id)
     .not('deleted_at', 'is', null)
     .order('deleted_at', { ascending: false })
 
-  const items = (data ?? []) as { id: string; title: string; deleted_at: string }[]
+  const items = (data ?? []) as {
+    id: string
+    title: string
+    icon: string | null
+    deleted_at: string
+  }[]
   const canEdit = team.role !== 'viewer'
 
   return (

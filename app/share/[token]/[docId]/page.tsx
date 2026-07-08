@@ -20,7 +20,8 @@ export async function generateMetadata({
   ])
   const robots = { index: false, follow: false }
   if (!doc) return { title: t.metadata.title, robots }
-  return { title: `${doc.title || t.common.untitled} · DocsApp`, robots }
+  const title = doc.title || t.common.untitled
+  return { title: `${doc.icon ? `${doc.icon} ` : ''}${title} · DocsApp`, robots }
 }
 
 export default async function ShareSubPage({

@@ -45,6 +45,9 @@ export const en: Dictionary = {
     collapse: 'Collapse panel',
     expand: 'Expand panel',
     empty: 'No documents yet.',
+    dragInstructions:
+      'To pick up a page press space or enter. Move it with the arrow keys and drop it by pressing space or enter again; escape cancels.',
+    toggleExpand: 'Expand or collapse',
   },
   mention: {
     empty: 'No matching documents',
@@ -92,6 +95,23 @@ export const en: Dictionary = {
     saved: 'Saved ✓',
     saveError: 'Failed to save',
     readOnly: 'Read only',
+  },
+  emoji: {
+    addIcon: 'Add icon',
+    changeIcon: 'Change icon',
+    removeIcon: 'Remove',
+    search: 'Search emoji…',
+    noResults: 'No results.',
+    categories: {
+      smileys: 'Smileys',
+      people: 'People',
+      nature: 'Nature',
+      food: 'Food',
+      travel: 'Travel & places',
+      activities: 'Activities',
+      objects: 'Objects',
+      symbols: 'Symbols',
+    },
   },
   onboarding: {
     title: 'Create your workspace',
@@ -163,6 +183,7 @@ export const en: Dictionary = {
     teamNameRequired: 'The team name is required',
     createTeamFailed: 'Couldn’t create the team',
     docCreateFailed: 'Couldn’t create the document',
+    docMoveFailed: 'Couldn’t move the document.',
     sessionFailed: 'Couldn’t confirm the session',
     inviteInvalid: 'Invalid or already used invitation',
     inviteExpired: 'The invitation expired',

@@ -18,10 +18,10 @@ export async function GET(request: Request, { params }: Params): Promise<Respons
 
     const { data, error } = await supabase
       .from('documents')
-      .select('id, title, parent_id, updated_at')
+      .select('id, title, icon, parent_id, position, updated_at')
       .eq('team_id', teamId)
       .is('deleted_at', null)
-      .order('updated_at', { ascending: false })
+      .order('position', { ascending: true })
     if (error) return fail('internal', error.message)
 
     return ok({ documents: data ?? [] })
@@ -30,6 +30,7 @@ export async function GET(request: Request, { params }: Params): Promise<Respons
 
 const createSchema = z.object({
   title: z.string().max(500).optional(),
+  icon: z.string().max(16).nullable().optional(),
   parent_id: z.string().uuid().nullable().optional(),
   content: z.union([z.string(), z.array(z.unknown())]).optional(),
   format: z.enum(['markdown', 'json']).optional(),
@@ -53,7 +54,7 @@ export async function POST(request: Request, { params }: Params): Promise<Respon
     if (!parsed.success) {
       return fail('bad_request', parsed.error.issues[0]?.message ?? 'Body inválido.')
     }
-    const { title, parent_id, content, format } = parsed.data
+    const { title, icon, parent_id, content, format } = parsed.data
 
     let seed: { ydocState: string; content: string } | null = null
     if (content !== undefined) {
@@ -70,10 +71,11 @@ export async function POST(request: Request, { params }: Params): Promise<Respon
         team_id: teamId,
         created_by: user.id,
         title: (title ?? '').trim(),
+        icon: icon?.trim() || null,
         parent_id: parent_id ?? null,
         ...(seed ? { ydoc_state: seed.ydocState, content: seed.content } : {}),
       })
-      .select('id, title, team_id, parent_id, updated_at')
+      .select('id, title, icon, team_id, parent_id, position, updated_at')
       .single()
     if (error) {
       // RLS (editor+) o trigger (parent de otro team / ciclo) lo rechazan.

@@ -7,6 +7,7 @@ export function SharedDocView({ doc, untitled }: { doc: SharedDoc; untitled: str
   return (
     <article className="mx-auto w-full max-w-2xl">
       <h1 className="mb-6 text-3xl font-bold tracking-tight break-words">
+        {doc.icon ? <span className="mr-2">{doc.icon}</span> : null}
         {doc.title || untitled}
       </h1>
       <div className="share-content" dangerouslySetInnerHTML={{ __html: doc.html }} />

@@ -45,6 +45,9 @@ export const es = {
     collapse: 'Ocultar panel',
     expand: 'Mostrar panel',
     empty: 'Sin documentos todavía.',
+    dragInstructions:
+      'Para levantar una página presioná espacio o enter. Movela con las flechas y soltala con espacio o enter de nuevo; escape cancela.',
+    toggleExpand: 'Expandir o colapsar',
   },
   mention: {
     empty: 'No hay documentos que coincidan',
@@ -92,6 +95,23 @@ export const es = {
     saved: 'Guardado ✓',
     saveError: 'Error al guardar',
     readOnly: 'Solo lectura',
+  },
+  emoji: {
+    addIcon: 'Agregar ícono',
+    changeIcon: 'Cambiar ícono',
+    removeIcon: 'Quitar',
+    search: 'Buscar emoji…',
+    noResults: 'Sin resultados.',
+    categories: {
+      smileys: 'Caritas',
+      people: 'Personas',
+      nature: 'Naturaleza',
+      food: 'Comida',
+      travel: 'Viajes y lugares',
+      activities: 'Actividades',
+      objects: 'Objetos',
+      symbols: 'Símbolos',
+    },
   },
   onboarding: {
     title: 'Creá tu workspace',
@@ -163,6 +183,7 @@ export const es = {
     teamNameRequired: 'El nombre del equipo es obligatorio',
     createTeamFailed: 'No se pudo crear el equipo',
     docCreateFailed: 'No se pudo crear el documento',
+    docMoveFailed: 'No se pudo mover el documento.',
     sessionFailed: 'No se pudo confirmar la sesión',
     inviteInvalid: 'Invitación inválida o ya utilizada',
     inviteExpired: 'La invitación expiró',

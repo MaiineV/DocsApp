@@ -3,6 +3,7 @@
 import crypto from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/user'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { sha256hex } from '@/lib/api/jwt'
 import type { ApiTokenRow, ApiTokenScope } from '@/lib/types'
@@ -24,9 +25,7 @@ export async function createApiToken(
 ): Promise<CreateResult> {
   const t = getDictionary(await getLocale())
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { ok: false, error: t.errors.notAuthenticated }
 
   const trimmed = name.trim().slice(0, 100)
@@ -63,9 +62,7 @@ export async function createApiToken(
 export async function revokeApiToken(id: string): Promise<{ ok: boolean; error?: string }> {
   const t = getDictionary(await getLocale())
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { ok: false, error: t.errors.notAuthenticated }
 
   const { error } = await supabase.from('api_tokens').delete().eq('id', id)

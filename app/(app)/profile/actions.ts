@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/user'
 import { getDictionary, getLocale } from '@/lib/i18n'
 
 type Result = { ok: boolean; error?: string }
@@ -11,9 +12,7 @@ type Result = { ok: boolean; error?: string }
 export async function updateProfile(nickname: string): Promise<Result> {
   const t = getDictionary(await getLocale())
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { ok: false, error: t.errors.notAuthenticated }
 
   const trimmed = nickname.trim().slice(0, 50)

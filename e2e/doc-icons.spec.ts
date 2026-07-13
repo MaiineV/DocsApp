@@ -15,6 +15,9 @@ test('asignar emoji → visible en sidebar → persiste tras reload → quitar',
   await page.getByLabel('Title').fill(title)
   const sidebarLink = page.locator('aside').getByRole('link', { name: new RegExp(title) })
   await expect(sidebarLink).toBeVisible({ timeout: 15_000 })
+  // Esperar el persist real ("Saved ✓") antes de seguir: la fila de la sidebar
+  // aparece client-side al instante, ANTES de que el título se guarde en DB.
+  await expect(page.getByText('Saved ✓')).toBeVisible({ timeout: 15_000 })
 
   // Abrir el picker (trigger = <summary>), buscar y elegir 🚀.
   await page.locator('summary[aria-label="Add icon"]').click()

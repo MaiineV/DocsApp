@@ -41,10 +41,11 @@ async function dragRow(page: Page, source: Locator, target: Locator, dx = 0) {
   await moved
 }
 
-// Crea un doc raíz desde la sidebar y le pone título; espera a que la sidebar
-// lo muestre (señal de que persistTitle + revalidate ya corrieron). OJO: se
-// llama estando en OTRO doc → hay que esperar el CAMBIO de URL (un regex de
-// /docs/[id] matchearía la URL actual y el fill iría al doc equivocado).
+// Crea un doc raíz desde la sidebar y le pone título; espera el badge "Saved ✓"
+// (la señal de que persistTitle corrió — la fila de la sidebar ya NO sirve de
+// barrera: el título se propaga client-side al instante, antes del persist).
+// OJO: se llama estando en OTRO doc → hay que esperar el CAMBIO de URL (un
+// regex de /docs/[id] matchearía la URL actual y el fill iría al doc equivocado).
 async function createRootDoc(page: Page, title: string) {
   const before = page.url()
   await page.getByRole('button', { name: 'New page' }).click()
@@ -57,6 +58,7 @@ async function createRootDoc(page: Page, title: string) {
   await expect(page.locator('aside').getByRole('link', { name: title })).toBeVisible({
     timeout: 15_000,
   })
+  await expect(page.getByText('Saved ✓')).toBeVisible({ timeout: 15_000 })
 }
 
 test('reordenar → anidar → des-anidar con drag & drop, persistido tras reload', async ({
@@ -76,6 +78,7 @@ test('reordenar → anidar → des-anidar con drag & drop, persistido tras reloa
   await expect(page.locator('aside').getByRole('link', { name: tA })).toBeVisible({
     timeout: 15_000,
   })
+  await expect(page.getByText('Saved ✓')).toBeVisible({ timeout: 15_000 })
   await createRootDoc(page, tB)
   await createRootDoc(page, tC)
 
@@ -162,6 +165,7 @@ test('índice /docs: colapsar/expandir subárbol y reordenar por drag, persistid
   await page.getByLabel('Title').fill(tA)
   const rowA = sidebarRow(page, tA)
   await expect(rowA).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('Saved ✓')).toBeVisible({ timeout: 15_000 })
 
   // Subpágina de A vía el "+" del row (navega a la subpágina nueva).
   const beforeChild = page.url()
@@ -175,6 +179,7 @@ test('índice /docs: colapsar/expandir subárbol y reordenar por drag, persistid
   await expect(page.locator('aside').getByRole('link', { name: tChild })).toBeVisible({
     timeout: 15_000,
   })
+  await expect(page.getByText('Saved ✓')).toBeVisible({ timeout: 15_000 })
   await createRootDoc(page, tB)
 
   // Al índice. Los rows del test (el índice no tiene <aside>).

@@ -21,9 +21,7 @@ import type { SearchResult, TeamMember } from '@/lib/types'
 // único (created_by, key) lo dedupea y abrimos el doc ya creado.
 export async function createDocument(parentId: string | null = null, idempotencyKey?: string) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   let teamId: string
@@ -160,7 +158,12 @@ export async function persistYdoc(
 
 // Guarda el título (LWW). El título no es colaborativo en vivo en Fase 2; cada
 // editor lo guarda por su cuenta. RLS (editor+) gatea: 0 filas = sin permiso.
-// `'layout'` para que el árbol del sidebar (vive en el layout) muestre el rename.
+// SIN revalidatePath: en Next 16 cualquier revalidate desde una action purga
+// TODO el Client Cache (comportamiento temporal documentado) y esta action
+// dispara por tipeo → mataba el prefetch warm de la navegación instantánea.
+// La sidebar del editor se refresca client-side vía DocTitleProvider; otros
+// usuarios ven el rename en su próxima navegación (igual que antes: el
+// revalidate nunca propagó nada cross-cliente).
 export async function persistTitle(
   id: string,
   title: string,
@@ -177,7 +180,6 @@ export async function persistTitle(
     return { ok: false, error: getDictionary(await getLocale()).errors.noEditPermission }
   }
 
-  revalidatePath('/docs', 'layout')
   return { ok: true }
 }
 
@@ -331,9 +333,7 @@ export async function createShareLink(
 ): Promise<ShareResult> {
   const t = getDictionary(await getLocale())
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { ok: false, error: t.errors.notAuthenticated }
 
   // ¿Ya hay un link activo? Reusarlo (idempotente), ajustando el scope si cambió.

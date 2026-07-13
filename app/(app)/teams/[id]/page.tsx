@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/user'
 import { getMyTeams } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { fmt } from '@/lib/i18n/format'
@@ -16,16 +17,9 @@ export default async function TeamMembersPage({ params }: { params: Promise<{ id
   const { id } = await params
   const supabase = await createClient()
 
-  const [
-    teams,
-    {
-      data: { user },
-    },
-    { data: membersData },
-    { data: invitesData },
-  ] = await Promise.all([
+  const [teams, user, { data: membersData }, { data: invitesData }] = await Promise.all([
     getMyTeams(),
-    supabase.auth.getUser(),
+    getAuthUser(),
     supabase.rpc('list_team_members', { p_team_id: id }),
     // RLS: solo admin+ ve invitaciones → para viewer/editor vuelve [].
     supabase

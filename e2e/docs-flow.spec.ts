@@ -15,6 +15,12 @@ test('login → crear doc → título persiste tras reload → borrar', async ({
   const unique = `E2E ${Date.now()}`
   await page.getByLabel('Title').fill(unique)
 
+  // La sidebar refleja el título mientras se tipea (propagación client-side
+  // vía DocTitleProvider, sin esperar el debounce de persistTitle ni revalidate).
+  await expect(page.locator('aside').getByRole('link', { name: unique })).toBeVisible({
+    timeout: 2_000,
+  })
+
   // Cuerpo: tipear en el editor BlockNote (contenteditable) y verlo in-session.
   const body = page.locator('[contenteditable="true"]').first()
   await body.click()

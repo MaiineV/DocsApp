@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 // Refresca la sesión de Supabase en cada request y redirige a /login si no hay
 // usuario. Se invoca desde el `proxy.ts` raíz (en Next 16 el middleware se
-// llama "proxy"). No metas lógica entre createServerClient y getUser.
+// llama "proxy"). No metas lógica entre createServerClient y getClaims.
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -28,11 +28,13 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  // getUser() revalida el token contra Auth (getSession() NO). No agregar
-  // código entre createServerClient y esta llamada, o habrá logouts random.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // getClaims() verifica la firma del JWT (local con clave asimétrica vía
+  // JWKS; con secreto simétrico cae a una llamada a Auth, como getUser) y —
+  // vía su getSession() interno — REFRESCA la sesión si expiró: esa es la
+  // función de este proxy. getSession() solo NO revalida. No agregar código
+  // entre createServerClient y esta llamada, o habrá logouts random.
+  const { data } = await supabase.auth.getClaims()
+  const user = data?.claims
 
   const path = request.nextUrl.pathname
   // Rutas públicas (sin login): auth + los links view-only `/share/<token>`, que se

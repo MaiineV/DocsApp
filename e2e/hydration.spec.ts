@@ -27,6 +27,9 @@ test('las vistas del árbol hidratan sin errores', async ({ page }) => {
   await expect(page.locator('aside').getByRole('link', { name: title })).toBeVisible({
     timeout: 15_000,
   })
+  // Esperar el persist real ("Saved ✓") antes de recargar: la fila de la
+  // sidebar aparece client-side al instante, ANTES de que el título se guarde.
+  await expect(page.getByText('Saved ✓')).toBeVisible({ timeout: 15_000 })
 
   // Recarga dura del editor (SSR + hidratación de la sidebar con DnD).
   await page.reload()

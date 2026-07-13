@@ -178,15 +178,23 @@ DOCSAPP_EMAIL=vos@ejemplo.com DOCSAPP_PASSWORD=••• \
 ## Setup (self-host)
 
 Además de `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`, la
-autenticación por **PAT** requiere el secreto JWT de Supabase en el server (para
-mintear el token efímero que preserva la RLS). Agregá a `.env.local` y a Vercel:
+autenticación por **PAT** requiere una clave de firma en el server (para mintear
+el JWT efímero que preserva la RLS). Dos opciones, en orden de preferencia:
 
 ```
+# Proyecto con JWT Signing Keys asimétricas: el JWK PRIVADO (una línea) de una
+# clave ES256 importada al proyecto (Dashboard → JWT Keys → Import an existing key).
+SUPABASE_JWT_PRIVATE_JWK={"kty":"EC","crv":"P-256","x":"…","y":"…","d":"…","kid":"…"}
+# Solo si el kid que asignó el dashboard difiere del que trae el JWK:
+# SUPABASE_JWT_KID=<kid del JWKS>
+
+# Fallback legacy (proyecto con secreto HS256 simétrico):
 SUPABASE_JWT_SECRET=<Dashboard → Settings → API → JWT Secret>
 ```
 
-Es **server-only** (nunca `NEXT_PUBLIC`). Sin él, el JWT Bearer clásico sigue
-funcionando, pero los PAT devuelven `500`.
+Ambas son **server-only** (nunca `NEXT_PUBLIC`). Si `SUPABASE_JWT_PRIVATE_JWK`
+está presente se usa ES256; si no, HS256 con el secreto legacy. Sin ninguna, el
+JWT Bearer clásico sigue funcionando, pero los PAT devuelven `500`.
 
 ## Roadmap
 

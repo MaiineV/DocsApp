@@ -1,20 +1,17 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/user'
 import { getMyProfile } from '@/lib/profile'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import ProfileEditor from '@/components/profile-editor'
 
 export default async function ProfilePage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const [profile, t] = await Promise.all([getMyProfile(), getLocale().then(getDictionary)])
   // Cuentas con identidad 'email' pueden cambiar contraseña; las de solo Google no.
-  const providers = (user.app_metadata?.providers as string[] | undefined) ?? []
+  const providers = user.app_metadata?.providers ?? []
   const canChangePassword = providers.includes('email')
 
   return (

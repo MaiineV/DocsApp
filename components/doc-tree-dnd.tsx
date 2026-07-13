@@ -2,6 +2,7 @@
 
 import {
   startTransition,
+  useEffect,
   useOptimistic,
   useState,
   useSyncExternalStore,
@@ -36,6 +37,7 @@ import { buildDocTree } from '@/lib/doc-tree'
 import { flattenTree, getProjection, type FlatDocNode } from '@/lib/doc-tree-dnd'
 import { positionBetween } from '@/lib/doc-position'
 import { moveDocument } from '@/app/(app)/docs/actions'
+import { useDocTitle, useDocTitleActions } from '@/components/doc-title-context'
 import { useI18n } from '@/components/i18n-provider'
 
 // Árbol de páginas con drag & drop estilo Notion: un solo gesto reordena entre
@@ -93,6 +95,22 @@ function TreeLink({
   )
 }
 
+// Label de la fila: consume el override de título ACÁ (hoja) para que un
+// keystroke en el título del editor re-renderice solo estos labels, no el
+// árbol DnD entero (el contexto de acciones que usa DocTreeDnd es estable).
+function DocTitleLabel({
+  id,
+  serverTitle,
+  untitled,
+}: {
+  id: string
+  serverTitle: string
+  untitled: string
+}) {
+  const title = useDocTitle(id, serverTitle)
+  return <>{title || untitled}</>
+}
+
 // px por nivel de indentación (la proyección de profundidad usa el mismo valor).
 const INDENT = { sidebar: 12, index: 20 } as const
 
@@ -135,6 +153,13 @@ export default function DocTreeDnd({
   locale?: string
 }) {
   const { t } = useI18n()
+  const { reconcileDocTitles } = useDocTitleActions()
+  // `docs` es una prop RSC fresca en cada render del layout (navegación o
+  // revalidate): drena los overrides de título que el server ya confirmó, para
+  // que un rename posterior de OTRO usuario vuelva a fluir. Idempotente, O(n).
+  useEffect(() => {
+    reconcileDocTitles(docs.map((d) => ({ id: d.id, title: d.title })))
+  }, [docs, reconcileDocTitles])
   // Optimistic sobre la prop RSC: el drop pinta el árbol movido al instante; si
   // la action falla no hay revalidate → React revierte solo a la prop original.
   const [optimisticDocs, applyMove] = useOptimistic(
@@ -303,7 +328,11 @@ export default function DocTreeDnd({
                 {dragged ? (
                   <div className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-fg shadow-lg">
                     {dragged.icon ? <span className="mr-1.5">{dragged.icon}</span> : null}
-                    {dragged.title || t.common.untitled}
+                    <DocTitleLabel
+                      id={dragged.id}
+                      serverTitle={dragged.title}
+                      untitled={t.common.untitled}
+                    />
                   </div>
                 ) : null}
               </DragOverlay>,
@@ -397,7 +426,7 @@ function SortableDocRow({
 
           <TreeLink href={`/docs/${item.id}`} className="flex-1 truncate py-2 sm:py-1.5">
             {item.node.icon ? <span className="mr-1.5">{item.node.icon}</span> : null}
-            {item.node.title || untitled}
+            <DocTitleLabel id={item.id} serverTitle={item.node.title} untitled={untitled} />
           </TreeLink>
 
           {canEdit ? (
@@ -424,7 +453,7 @@ function SortableDocRow({
           >
             <span className="truncate font-medium">
               {item.node.icon ? <span className="mr-1.5">{item.node.icon}</span> : null}
-              {item.node.title || untitled}
+              <DocTitleLabel id={item.id} serverTitle={item.node.title} untitled={untitled} />
             </span>
             {item.node.updated_at ? (
               <span className="shrink-0 pl-3 text-xs text-subtle">

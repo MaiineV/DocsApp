@@ -1,15 +1,14 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/user'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import ApiTokensManager from '@/components/api-tokens-manager'
 import type { ApiTokenRow } from '@/lib/types'
 
 export default async function TokensPage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const [{ data }, locale] = await Promise.all([

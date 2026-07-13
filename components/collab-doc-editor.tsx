@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import dynamic from 'next/dynamic'
 import { persistIcon, persistTitle } from '@/app/(app)/docs/actions'
 import EmojiPicker from '@/components/emoji-picker'
+import { useDocTitle, useDocTitleActions } from '@/components/doc-title-context'
 import { useI18n } from '@/components/i18n-provider'
 import type { CollabUser } from '@/lib/collab'
 import type { SaveState } from '@/components/blocknote-collab-canvas'
@@ -44,10 +45,19 @@ export default function CollabDocEditor({
   teamDocs,
 }: Props) {
   const { t } = useI18n()
-  const [title, setTitle] = useState(initialTitle)
+  const { setDocTitle } = useDocTitleActions()
+  // El input arranca del override de sesión si esta pestaña ya renombró el doc:
+  // un back-nav dentro de la ventana stale del Router Cache sirve un RSC viejo
+  // y sin esto el initialTitle stale resucitaría el título anterior (LWW).
+  // Solo initializer — el input no es controlado por el contexto (el reconcile
+  // puede borrar la entrada mid-sesión).
+  const overrideTitle = useDocTitle(docId, initialTitle)
+  const [title, setTitle] = useState(overrideTitle)
   const [icon, setIcon] = useState(initialIcon)
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Último título tipeado cuyo persist debounced aún no disparó (para flush).
+  const pendingTitle = useRef<string | null>(null)
 
   // Alinear el tema de BlockNote con el tema REAL de la app (`data-theme` en <html>,
   // que setea el toggle manual / script anti-flash), no solo con el del sistema —
@@ -68,17 +78,29 @@ export default function CollabDocEditor({
     (e: ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value
       setTitle(value)
+      // La sidebar refleja el tipeo al instante (sin esperar debounce ni server).
+      setDocTitle(docId, value)
+      pendingTitle.current = value
       if (titleTimer.current) clearTimeout(titleTimer.current)
       titleTimer.current = setTimeout(async () => {
+        pendingTitle.current = null
         setSaveState('saving')
         const res = await persistTitle(docId, value)
         setSaveState(res.ok ? 'saved' : 'error')
       }, TITLE_DEBOUNCE_MS)
     },
-    [docId],
+    [docId, setDocTitle],
   )
 
-  useEffect(() => () => { if (titleTimer.current) clearTimeout(titleTimer.current) }, [])
+  useEffect(
+    () => () => {
+      if (titleTimer.current) clearTimeout(titleTimer.current)
+      // Flush: navegar antes de que dispare el debounce no debe perder el
+      // rename (con la nav warm es fácil irse en <800ms). Fire-and-forget.
+      if (pendingTitle.current !== null) void persistTitle(docId, pendingTitle.current)
+    },
+    [docId],
+  )
 
   // El emoji se guarda al click (sin debounce: es una elección puntual, no tipeo).
   const onIconSelect = useCallback(

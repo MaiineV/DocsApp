@@ -24,10 +24,12 @@ const PAT_PREFIX = 'dapp_'
 //
 // Dos caminos:
 //  - **PAT** (`dapp_…`): se busca por hash vía la RPC `consume_api_token` (rol anon,
-//    pre-auth), y si es válido se mintea un JWT HS256 efímero para ese usuario, de
-//    modo que la RLS aplique igual que con un login real. `scope` sale del token.
-//  - **JWT Bearer** (lo actual): `getUser(jwt)` revalida el token contra Auth y
-//    devuelve el cliente bindeado; scope implícito `read_write`.
+//    pre-auth), y si es válido se mintea un JWT efímero para ese usuario (ES256 o
+//    HS256 legacy, ver lib/api/jwt), de modo que la RLS aplique igual que con un
+//    login real. `scope` sale del token.
+//  - **JWT Bearer** (lo actual): `getClaims(jwt)` verifica firma + expiración
+//    (local con claves asimétricas) y devuelve el cliente bindeado; scope
+//    implícito `read_write`.
 //
 // Si falla, devuelve `{ error: Response }` (401) listo para retornar.
 export async function authenticateRequest(
@@ -63,7 +65,7 @@ async function authenticateWithPat(
   try {
     jwt = mintSupabaseJwt(row.user_id)
   } catch (e) {
-    // Falta SUPABASE_JWT_SECRET (config del server), no culpa del cliente.
+    // Falta la clave de firma (config del server), no culpa del cliente.
     return { error: fail('internal', (e as Error).message) }
   }
 
@@ -80,11 +82,13 @@ async function authenticateWithJwt(
   jwt: string,
 ): Promise<ApiAuth | { error: Response }> {
   const supabase = createApiClient(jwt)
-  const { data, error } = await supabase.auth.getUser(jwt)
-  if (error || !data.user) {
+  // Verifica firma + expiración: local vía JWKS con claves asimétricas; con
+  // secreto simétrico cae a una llamada a Auth (comportamiento previo).
+  const { data, error } = await supabase.auth.getClaims(jwt)
+  if (error || !data) {
     return { error: fail('unauthorized', 'Token inválido o expirado.') }
   }
-  return { supabase, user: { id: data.user.id }, jwt, scope: 'read_write', tokenId: null }
+  return { supabase, user: { id: data.claims.sub }, jwt, scope: 'read_write', tokenId: null }
 }
 
 // Narrowing helper: true si `authenticateRequest` falló (para `if (isAuthError(a)) return a.error`).

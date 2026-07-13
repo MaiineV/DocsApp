@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/user'
 import { ACTIVE_TEAM_COOKIE } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import type { Role } from '@/lib/types'
@@ -35,9 +36,7 @@ export async function createInvitation(
   const token = randomBytes(32).toString('hex')
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return { ok: false, error: t.errors.notAuthenticated }
 
   const { data, error } = await supabase

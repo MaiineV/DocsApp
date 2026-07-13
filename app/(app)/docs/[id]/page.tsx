@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/user'
 import { getMyTeams } from '@/lib/teams'
 import { getDocument, listTeamDocs } from '@/lib/documents'
 import { getMyProfile } from '@/lib/profile'
@@ -15,30 +15,34 @@ import ShareDialog from '@/components/share-dialog'
 export default async function DocPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  const supabase = await createClient()
-  const [doc, { data: { user } }, profile] = await Promise.all([
-    getDocument(id), // cacheado → reusa el fetch del layout
-    supabase.auth.getUser(),
+  // Todo en paralelo: getDocument/listTeamDocs se dedupean con el layout
+  // (React.cache) y getActiveShare se dispara incondicionalmente — solo
+  // depende del id de la ruta y la RLS devuelve null para viewers.
+  const docP = getDocument(id)
+  const allDocsP = docP.then((d) => (d ? listTeamDocs(d.team_id) : []))
+  const [doc, user, profile, teams, allDocs, rawShare, locale] = await Promise.all([
+    docP,
+    getAuthUser(),
     getMyProfile(),
+    getMyTeams(),
+    allDocsP,
+    getActiveShare(id),
+    getLocale(),
   ])
 
   if (!doc) notFound()
 
-  const [teams, allDocs] = await Promise.all([
-    getMyTeams(),
-    listTeamDocs(doc.team_id), // cacheado → reusa el fetch del layout
-  ])
   const role = teams.find((t) => t.id === doc.team_id)?.role
   const canEdit = role !== undefined && role !== 'viewer'
 
   // Link view-only del doc (solo editor+ lo gestiona → se hidrata solo si canEdit).
-  const share = canEdit ? await getActiveShare(doc.id) : null
+  const share = canEdit ? rawShare : null
 
   // Otros docs del team para el menú de @menciones (sin el actual).
   const teamDocs = allDocs.filter((d) => d.id !== id).map((d) => ({ id: d.id, title: d.title }))
 
   const collabUser = collabUserFromProfile(profile?.nickname, user?.email, user?.id ?? '')
-  const t = getDictionary(await getLocale())
+  const t = getDictionary(locale)
 
   const del = deleteDocument.bind(null, doc.id)
 
@@ -65,7 +69,9 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
         userId={user?.id ?? ''}
         initialTitle={doc.title}
         initialIcon={doc.icon}
-        initialContent={doc.content}
+        // El canvas solo lee initialContent cuando NO hay snapshot Yjs (docs
+        // legacy); con snapshot, mandar el JSON de bloques duplica el payload.
+        initialContent={doc.ydoc_state ? '' : doc.content}
         initialYdocState={doc.ydoc_state}
         editable={canEdit}
         user={collabUser}

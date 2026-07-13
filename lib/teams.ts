@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/user'
 import type { Role } from '@/lib/types'
 
 export type TeamWithRole = {
@@ -26,11 +27,9 @@ export function activeTeamCookieOptions() {
 // membership. RLS garantiza que solo devuelve teams donde es miembro.
 // `cache` deduplica la query dentro de un mismo render pass.
 export const getMyTeams = cache(async (): Promise<TeamWithRole[]> => {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
+  const supabase = await createClient()
 
   // Filtrar a las memberships PROPIAS. La policy memberships_select también deja
   // ver las de los compañeros del mismo team (para listar miembros); sin este

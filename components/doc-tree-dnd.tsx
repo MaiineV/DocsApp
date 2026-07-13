@@ -1,8 +1,14 @@
 'use client'
 
-import { startTransition, useOptimistic, useState, useSyncExternalStore } from 'react'
+import {
+  startTransition,
+  useOptimistic,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react'
 import { createPortal } from 'react-dom'
-import Link from 'next/link'
+import Link, { useLinkStatus } from 'next/link'
 import {
   DndContext,
   DragOverlay,
@@ -38,6 +44,54 @@ import { useI18n } from '@/components/i18n-provider'
 // offset horizontal del puntero (lógica pura en lib/doc-tree-dnd).
 // Dos variantes: 'sidebar' (rows compactos + botón subpágina) e 'index' (la
 // lista de /docs: rows grandes con fecha de actualización).
+
+// Fade del contenido del link mientras la navegación está pendiente. El delay
+// de 150ms hace que las navegaciones rápidas (prefetch warm) no lo muestren.
+function PendingFade({ className, children }: { className?: string; children: ReactNode }) {
+  const { pending } = useLinkStatus()
+  return (
+    <span
+      className={`${className ?? ''} transition-opacity duration-200 ${
+        pending ? 'opacity-50 delay-150' : 'opacity-100 delay-0'
+      }`}
+    >
+      {children}
+    </span>
+  )
+}
+
+// Link del árbol con prefetch por intención: default 'auto' (null) hasta que el
+// usuario muestra intención (hover/focus) y ahí se sube a prefetch completo de
+// la ruta dinámica (prefetch corre solo en producción). `intent` es sticky por
+// mount: Next re-prefetchea solo si la entrada expira o la invalida un
+// revalidatePath, así que no hace falta throttling propio.
+// draggable=false: el drag NATIVO del <a> cancela los pointer events y rompe
+// (a veces) la activación del MouseSensor de dnd-kit.
+function TreeLink({
+  href,
+  className,
+  labelClassName,
+  children,
+}: {
+  href: string
+  className: string
+  labelClassName?: string
+  children: ReactNode
+}) {
+  const [intent, setIntent] = useState(false)
+  return (
+    <Link
+      href={href}
+      prefetch={intent ? true : null}
+      draggable={false}
+      onPointerEnter={() => setIntent(true)}
+      onFocus={() => setIntent(true)}
+      className={className}
+    >
+      <PendingFade className={labelClassName}>{children}</PendingFade>
+    </Link>
+  )
+}
 
 // px por nivel de indentación (la proyección de profundidad usa el mismo valor).
 const INDENT = { sidebar: 12, index: 20 } as const
@@ -341,16 +395,10 @@ function SortableDocRow({
         >
           {chevron}
 
-          {/* draggable=false: el drag NATIVO del <a> cancela los pointer events y
-              rompe (a veces) la activación del MouseSensor de dnd-kit. */}
-          <Link
-            href={`/docs/${item.id}`}
-            draggable={false}
-            className="flex-1 truncate py-2 sm:py-1.5"
-          >
+          <TreeLink href={`/docs/${item.id}`} className="flex-1 truncate py-2 sm:py-1.5">
             {item.node.icon ? <span className="mr-1.5">{item.node.icon}</span> : null}
             {item.node.title || untitled}
-          </Link>
+          </TreeLink>
 
           {canEdit ? (
             <NewDocButton
@@ -369,10 +417,10 @@ function SortableDocRow({
           style={{ paddingLeft: item.depth * indent }}
         >
           {chevron}
-          <Link
+          <TreeLink
             href={`/docs/${item.id}`}
-            draggable={false}
-            className="flex flex-1 items-center justify-between py-3"
+            className="flex flex-1 py-3"
+            labelClassName="flex w-full items-center justify-between"
           >
             <span className="truncate font-medium">
               {item.node.icon ? <span className="mr-1.5">{item.node.icon}</span> : null}
@@ -383,7 +431,7 @@ function SortableDocRow({
                 {new Date(item.node.updated_at).toLocaleDateString(locale)}
               </span>
             ) : null}
-          </Link>
+          </TreeLink>
         </div>
       )}
     </li>

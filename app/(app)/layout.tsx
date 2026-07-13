@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/user'
 import { getActiveTeam, getMyTeams } from '@/lib/teams'
 import { getMyProfile } from '@/lib/profile'
 import { displayName } from '@/lib/collab'
@@ -16,16 +16,12 @@ import { SubmitButton } from '@/components/submit-button'
 // Shell del área autenticada. El proxy ya redirige a /login si no hay sesión;
 // acá repetimos el chequeo como defensa en profundidad (getUser revalida).
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const supabase = await createClient()
-
-  const [
-    {
-      data: { user },
-    },
-    teams,
-    active,
-    profile,
-  ] = await Promise.all([supabase.auth.getUser(), getMyTeams(), getActiveTeam(), getMyProfile()])
+  const [user, teams, active, profile] = await Promise.all([
+    getAuthUser(),
+    getMyTeams(),
+    getActiveTeam(),
+    getMyProfile(),
+  ])
 
   if (!user) redirect('/login')
 

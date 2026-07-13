@@ -10,6 +10,26 @@ realtime vendor), and token-based team invitations.
 
 ---
 
+## See it in action
+
+**Real-time collaboration** — two users on the same document, with named live cursors, synced by Yjs
+(CRDT) over Supabase Realtime:
+
+![Two browsers editing the same document simultaneously, each seeing the other's named cursor and text appear live](docs/media/collab.gif)
+
+**Notion-style organization** — reorder pages with drag & drop in the sidebar and give each page its
+own emoji:
+
+![Dragging pages to reorder them in the sidebar tree, then assigning an emoji from the built-in picker](docs/media/organize.gif)
+
+**Version history with non-destructive restore** — every editing burst leaves a snapshot; preview any
+version and restore it (the current state is checkpointed first, and the restore lands live in open
+editors):
+
+![Editing a document, opening version history, previewing the pre-edit snapshot and restoring it](docs/media/versions.gif)
+
+---
+
 ## Features
 
 - 🔐 **Auth** — email/password and **Google OAuth** (PKCE), with automatic identity linking by email.

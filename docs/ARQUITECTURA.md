@@ -4,7 +4,7 @@
 > con almacenamiento en la nube, equipos, management y colaboradores por equipo,
 > y múltiples equipos por cuenta. Referencia: Loop, Coda, Notion.
 
-**Última actualización:** 2026-06-24
+**Última actualización:** 2026-07-13
 
 ---
 
@@ -144,7 +144,9 @@ User (cuenta)
 2. **Tiempo real** — Yjs + y-indexeddb + Liveblocks → multiusuario, cursores, presencia, offline.
 3. **Equipos completos** — invitaciones, permisos por doc, papelera, búsqueda.
 4. **Mobile/offline** — activar PWA.
-5. **Escala** — migrar sync a self-host si el costo lo pide; comentarios, historial de versiones, menciones.
+5. **Escala** — migrar sync a self-host si el costo lo pide; comentarios ✅ (Fase 13), historial de
+   versiones ✅ (Fase 14: captura por trigger con coalescing + restore no destructivo por delta CRDT),
+   menciones ✅ (chips @doc).
 
 ### Primeros pasos concretos (Fase 0)
 1. `create-next-app` con TypeScript + App Router + Tailwind.

@@ -285,4 +285,23 @@ export const en: Dictionary = {
     reopen: 'Reopen',
     resolved: 'Resolved',
   },
+  versions: {
+    link: 'History',
+    title: 'Version history',
+    empty: 'No versions yet. They are created automatically as you edit the document.',
+    selectPrompt: 'Pick a version from the list to preview it.',
+    createdAt: '{date}',
+    byAuthor: 'by {name}',
+    unknownAuthor: 'a team member',
+    untitled: 'Untitled',
+    current: 'Current version',
+    restore: 'Restore this version',
+    confirmRestore:
+      'The document goes back to this version. The current state is saved as a new version, so nothing is lost.',
+    commentsWarning: 'Comments anchored to text may lose their anchor.',
+    confirm: 'Yes, restore',
+    cancel: 'Cancel',
+    restoreError: 'Could not restore the version.',
+    backToDoc: 'Back to document',
+  },
 }

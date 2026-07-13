@@ -4,10 +4,12 @@ import { randomBytes } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth/user'
 import { getActiveTeam } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { casMergeYdoc } from '@/lib/yjs/persist'
 import { softDeleteDoc, restoreDoc, purgeDoc } from '@/lib/trash'
+import { restoreVersion } from '@/lib/versions'
 import { positionAfter, POSITION_GAP } from '@/lib/doc-position'
 import { toCommentUser, type CommentUser } from '@/lib/comments'
 import type { SearchResult, TeamMember } from '@/lib/types'
@@ -402,5 +404,35 @@ export async function revokeShareLink(docId: string): Promise<ShareResult> {
   if (!data || data.length === 0) return { ok: false, error: t.errors.noSharePermission }
 
   revalidatePath(`/docs/${docId}`)
+  return { ok: true }
+}
+
+// ---------------------------------------------------------------------------
+// Historial de versiones (Fase 14).
+// ---------------------------------------------------------------------------
+
+// Restaura un documento al estado de una versión del historial. No destructivo:
+// restoreVersion checkpointea el estado actual antes de pisarlo. El JWT de la
+// sesión va solo como Bearer del broadcast Realtime best-effort (mismo modelo
+// de confianza que el provider del editor); la authz real es RLS.
+export async function restoreDocVersion(
+  docId: string,
+  versionId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const t = getDictionary(await getLocale())
+  const user = await getAuthUser()
+  if (!user) return { ok: false, error: t.errors.notAuthenticated }
+
+  const supabase = await createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  const res = await restoreVersion(supabase, session?.access_token ?? '', user.id, docId, versionId)
+  if (!res.ok) return { ok: false, error: res.error ?? t.versions.restoreError }
+
+  revalidatePath(`/docs/${docId}`)
+  revalidatePath(`/docs/${docId}/versions`)
+  if (res.titleChanged) revalidatePath('/docs', 'layout') // el título vive en la sidebar
   return { ok: true }
 }

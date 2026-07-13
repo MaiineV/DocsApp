@@ -22,6 +22,10 @@ realtime vendor), and token-based team invitations.
 - 🔌 **REST API** — `/api/v1` for local projects: CRUD documents across your teams with a Bearer token,
   read/write **Markdown** or JSON, and edits that broadcast **live** to open editors. See
   [`docs/API.md`](docs/API.md).
+- 🕘 **Version history** — every editing burst leaves a coalesced snapshot (DB trigger over the Yjs
+  state, capped per doc). Browse, preview and **restore non-destructively**: the current state is
+  checkpointed first and the restore lands **live** in open editors via the same CRDT delta pipeline
+  the API uses.
 
 ## Architecture highlights
 
@@ -159,5 +163,6 @@ proxy.ts             # Next.js 16 middleware (session refresh + route guard)
 
 Built in phases: **0** auth + multi-tenant + RLS · **1** rich-text editor · **2** real-time
 collaboration (Yjs over Supabase Realtime) · **3** teams + invitations · **+** Google OAuth · **6** user
-profiles · **7** REST API (`/api/v1`, Bearer auth, Markdown, live edits). Core is feature-complete;
-deployed on Vercel against Supabase.
+profiles · **7** REST API (`/api/v1`, Bearer auth, Markdown, live edits) · plus full-text search, trash
+with restore, public share links, inline comments, drag & drop page organization and **version history
+with non-destructive restore**. Core is feature-complete; deployed on Vercel against Supabase.

@@ -8,6 +8,7 @@ import { getActiveShare } from '@/lib/shares'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { collabUserFromProfile } from '@/lib/collab'
 import { SubmitButton } from '@/components/submit-button'
+import { buttonClasses } from '@/components/ui/button'
 import { deleteDocument } from '../actions'
 import CollabDocEditor from '@/components/collab-doc-editor'
 import ShareDialog from '@/components/share-dialog'
@@ -54,6 +55,9 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
         </Link>
         {canEdit ? (
           <div className="flex items-center gap-2">
+            <Link href={`/docs/${doc.id}/versions`} className={buttonClasses('secondary', 'sm')}>
+              {t.versions.link}
+            </Link>
             <ShareDialog docId={doc.id} initialShare={share} />
             <form action={del}>
               <SubmitButton className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950">

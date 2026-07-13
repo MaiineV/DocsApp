@@ -285,6 +285,25 @@ export const es = {
     reopen: 'Reabrir',
     resolved: 'Resuelto',
   },
+  versions: {
+    link: 'Historial',
+    title: 'Historial de versiones',
+    empty: 'Todavía no hay versiones. Se crean solas a medida que editás el documento.',
+    selectPrompt: 'Elegí una versión de la lista para previsualizarla.',
+    createdAt: '{date}',
+    byAuthor: 'por {name}',
+    unknownAuthor: 'alguien del equipo',
+    untitled: 'Sin título',
+    current: 'Versión actual',
+    restore: 'Restaurar esta versión',
+    confirmRestore:
+      'El documento vuelve al estado de esta versión. El estado actual se guarda como una versión nueva, así que no se pierde nada.',
+    commentsWarning: 'Los comentarios anclados al texto pueden perder su anclaje.',
+    confirm: 'Sí, restaurar',
+    cancel: 'Cancelar',
+    restoreError: 'No se pudo restaurar la versión.',
+    backToDoc: 'Volver al documento',
+  },
 }
 
 export type Dictionary = typeof es

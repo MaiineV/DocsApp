@@ -44,6 +44,7 @@ export const es = {
     newChild: 'Agregar subpágina',
     collapse: 'Ocultar panel',
     expand: 'Mostrar panel',
+    resize: 'Redimensionar panel',
     empty: 'Sin documentos todavía.',
     dragInstructions:
       'Para levantar una página presioná espacio o enter. Movela con las flechas y soltala con espacio o enter de nuevo; escape cancela.',

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getDocument, listTeamDocs } from '@/lib/documents'
 import { getMyTeams } from '@/lib/teams'
 import DocSidebar from '@/components/doc-sidebar'
+import { SIDEBAR_WIDTH_COOKIE, parseSidebarWidthCookie } from '@/lib/sidebar-width'
 
 const SIDEBAR_COOKIE = 'docs_sidebar_collapsed'
 
@@ -33,6 +34,7 @@ export default async function DocLayout({
   const role = teams.find((t) => t.id === doc.team_id)?.role
   const canEdit = role !== undefined && role !== 'viewer'
   const collapsed = cookieStore.get(SIDEBAR_COOKIE)?.value === '1'
+  const width = parseSidebarWidthCookie(cookieStore.get(SIDEBAR_WIDTH_COOKIE)?.value)
 
   return (
     // min-h-0: sin esto el flex item crece con el contenido y el overflow-hidden
@@ -49,8 +51,11 @@ export default async function DocLayout({
         activeDocId={id}
         canEdit={canEdit}
         initialCollapsed={collapsed}
+        initialWidth={width}
       />
-      <div className="flex-1 overflow-y-auto">{children}</div>
+      {/* min-w-0: con el sidebar ancho, un editor intrínsecamente ancho no debe
+          empujar la fila flex más allá del overflow-hidden del contenedor. */}
+      <div className="min-w-0 flex-1 overflow-y-auto">{children}</div>
     </div>
   )
 }

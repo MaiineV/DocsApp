@@ -44,6 +44,7 @@ export const en: Dictionary = {
     newChild: 'Add subpage',
     collapse: 'Collapse panel',
     expand: 'Expand panel',
+    resize: 'Resize sidebar',
     empty: 'No documents yet.',
     dragInstructions:
       'To pick up a page press space or enter. Move it with the arrow keys and drop it by pressing space or enter again; escape cancels.',

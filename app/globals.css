@@ -39,6 +39,9 @@
 
   --badge: #f4f4f5;        /* fondo de badge neutro (zinc-100) */
   --badge-fg: #52525b;     /* texto de badge (zinc-600) */
+
+  --link: #2563eb;         /* hipervínculos en contenido (blue-600) */
+  --link-hover: #1d4ed8;   /* blue-700 */
 }
 
 [data-theme="dark"] {
@@ -69,6 +72,9 @@
 
   --badge: #27272a;
   --badge-fg: #a1a1aa;
+
+  --link: #60a5fa;         /* blue-400 */
+  --link-hover: #93c5fd;   /* blue-300 */
 }
 
 /* Exponer los tokens como utilidades Tailwind. `inline` mantiene el valor como
@@ -98,6 +104,8 @@
   --color-success: var(--success);
   --color-badge: var(--badge);
   --color-badge-fg: var(--badge-fg);
+  --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
 
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
@@ -124,6 +132,19 @@ body {
   100% {
     left: 100%;
   }
+}
+
+/* Hipervínculos dentro del editor. El preflight de Tailwind resetea <a> a
+   `color: inherit` sin subrayado y BlockNote no estila el mark de link, así que
+   sin esto un link no se distingue del texto plano (ni en edición ni en lectura). */
+.bn-editor a {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.bn-editor a:hover {
+  color: var(--link-hover);
 }
 
 /* La toolbar flotante de BlockNote no debe cortarse en pantallas chicas. */
@@ -164,9 +185,12 @@ body {
   font-size: 1.1rem;
 }
 .share-content a {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+.share-content a:hover {
+  color: var(--link-hover);
 }
 .share-content ul,
 .share-content ol {

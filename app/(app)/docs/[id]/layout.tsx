@@ -35,7 +35,9 @@ export default async function DocLayout({
   const collapsed = cookieStore.get(SIDEBAR_COOKIE)?.value === '1'
 
   return (
-    <div className="relative flex flex-1 overflow-hidden">
+    // min-h-0: sin esto el flex item crece con el contenido y el overflow-hidden
+    // no acota nada → sidebar y documento scrollean cada uno por su lado.
+    <div className="relative flex min-h-0 flex-1 overflow-hidden">
       <DocSidebar
         docs={teamDocs.map((d) => ({
           id: d.id,

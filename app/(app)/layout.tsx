@@ -35,7 +35,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     // navegaciones doc→doc sin re-montarse) para que el rename de título fluya
     // client-side del editor a la sidebar sin revalidatePath.
     <DocTitleProvider>
-      <div className="flex min-h-full flex-col">
+      {/* h-dvh + min-h-0 en <main>: acota la cadena de alturas para que las
+          rutas que lo necesiten (docs/[id]) scrolleen por panel en vez de
+          scrollear la página entera. Las demás páginas desbordan <main> y el
+          documento scrollea normal. */}
+      <div className="flex h-dvh flex-col">
         <header className="flex items-center justify-between border-b border-black/10 px-4 py-3 sm:px-6 dark:border-white/10">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <Link href="/docs" className="shrink-0 font-semibold tracking-tight">
@@ -73,7 +77,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             </form>
           </div>
         </header>
-        <main className="flex flex-1 flex-col">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col">{children}</main>
       </div>
     </DocTitleProvider>
   )

@@ -227,6 +227,11 @@ export const en: Dictionary = {
     uploadFailed: 'Couldn’t upload the image.',
     calendarLink: 'My calendar →',
   },
+  editor: {
+    imageType: 'Only PNG, JPEG, GIF or WebP images can be uploaded.',
+    imageTooBig: 'The image exceeds 10 MB.',
+    imageUploadFailed: 'Couldn’t upload the image.',
+  },
   calendar: {
     title: 'Calendar',
     teamTitle: '{team} calendar',

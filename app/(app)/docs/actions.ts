@@ -1,6 +1,6 @@
 'use server'
 
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
@@ -9,6 +9,9 @@ import { getActiveTeam } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
 import { casMergeYdoc } from '@/lib/yjs/persist'
 import { softDeleteDoc, restoreDoc, purgeDoc } from '@/lib/trash'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { deleteDocImages } from '@/lib/doc-images-server'
+import { DOC_IMAGES_BUCKET, buildImagePath, publicImageUrl, validateImageFile } from '@/lib/doc-images'
 import { restoreVersion } from '@/lib/versions'
 import { positionAfter, POSITION_GAP } from '@/lib/doc-position'
 import { toCommentUser, type CommentUser } from '@/lib/comments'
@@ -240,7 +243,10 @@ export async function restoreDocument(id: string): Promise<{ ok: boolean; error?
 export async function purgeDocument(id: string): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient()
   const res = await purgeDoc(supabase, id)
-  if (res.ok) revalidatePath('/docs/trash')
+  if (res.ok) {
+    if (res.teamId && res.ids) await deleteDocImages(res.teamId, res.ids)
+    revalidatePath('/docs/trash')
+  }
   return { ok: res.ok, error: res.error }
 }
 
@@ -435,4 +441,66 @@ export async function restoreDocVersion(
   revalidatePath(`/docs/${docId}/versions`)
   if (res.titleChanged) revalidatePath('/docs', 'layout') // el título vive en la sidebar
   return { ok: true }
+}
+
+// ---------------------------------------------------------------------------
+// Document images (Supabase Storage, public bucket `doc-images`).
+// ---------------------------------------------------------------------------
+
+const EDITOR_ROLES = new Set(['owner', 'admin', 'editor'])
+
+export type ImageUploadTicket =
+  | { ok: true; path: string; token: string; publicUrl: string }
+  | { ok: false; error: string }
+
+/** Signs a direct-to-Storage upload for an editor+ of the doc's team; the file never transits Vercel. */
+export async function createImageUploadUrl(
+  docId: string,
+  file: { type: string; size: number },
+): Promise<ImageUploadTicket> {
+  const t = getDictionary(await getLocale())
+  const user = await getAuthUser()
+  if (!user) return { ok: false, error: t.errors.notAuthenticated }
+
+  const v = validateImageFile(file)
+  if (!v.ok) return { ok: false, error: v.reason === 'type' ? t.editor.imageType : t.editor.imageTooBig }
+
+  const supabase = await createClient()
+  const { data: doc } = await supabase
+    .from('documents')
+    .select('team_id')
+    .eq('id', docId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (!doc) return { ok: false, error: t.errors.noEditPermission }
+
+  const { data: mem } = await supabase
+    .from('memberships')
+    .select('role')
+    .eq('team_id', doc.team_id as string)
+    .eq('user_id', user.id)
+    .maybeSingle()
+  if (!mem || !EDITOR_ROLES.has(mem.role as string)) {
+    return { ok: false, error: t.errors.noEditPermission }
+  }
+
+  let admin
+  try {
+    admin = createAdminClient()
+  } catch (e) {
+    console.error('[doc-images]', e)
+    return { ok: false, error: t.editor.imageUploadFailed }
+  }
+  const path = buildImagePath(doc.team_id as string, docId, randomUUID(), v.ext)
+  const { data, error } = await admin.storage.from(DOC_IMAGES_BUCKET).createSignedUploadUrl(path)
+  if (error || !data) {
+    console.error('[doc-images] createSignedUploadUrl:', error)
+    return { ok: false, error: t.editor.imageUploadFailed }
+  }
+  return {
+    ok: true,
+    path: data.path,
+    token: data.token,
+    publicUrl: publicImageUrl(process.env.NEXT_PUBLIC_SUPABASE_URL!, data.path),
+  }
 }

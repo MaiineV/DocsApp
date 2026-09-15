@@ -155,7 +155,23 @@ PostgREST, so team roles gate every call (no parallel authorization logic). High
    GOOGLE_TOKEN_ENC_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))")
    ```
    Without these the app still works; the profile page just reports the integration as not configured.
-6. **Run**
+6. **Images in documents** — `apply_all.sql` creates the public `doc-images` bucket. Uploads are signed
+   server-side, so the service role key is required:
+   ```bash
+   SUPABASE_SERVICE_ROLE_KEY=<service-role-key>   # server only, never NEXT_PUBLIC_
+   ```
+   Images are downscaled to 1600px WebP in the browser (max 10 MB per file) and stored at
+   `doc-images/<teamId>/<docId>/<uuid>.<ext>`; purging a document from the trash deletes its folder.
+7. **(Optional) Storage usage alert** — [`vercel.json`](vercel.json) schedules `GET /api/cron/storage-check`
+   daily. It sums Supabase Storage usage and POSTs to a Discord/Slack-compatible webhook when usage reaches
+   the threshold:
+   ```bash
+   CRON_SECRET=<random string>                    # Vercel sends it as Bearer; the route rejects anything else
+   STORAGE_ALERT_WEBHOOK_URL=<discord or slack incoming webhook url>
+   STORAGE_QUOTA_BYTES=1073741824                 # optional, default 1 GiB (Supabase Free)
+   STORAGE_ALERT_PCT=80                           # optional, default 80
+   ```
+8. **Run**
    ```bash
    npm run dev
    ```

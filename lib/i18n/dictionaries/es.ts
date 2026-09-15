@@ -227,6 +227,11 @@ export const es = {
     uploadFailed: 'No se pudo subir la imagen.',
     calendarLink: 'Mi calendario →',
   },
+  editor: {
+    imageType: 'Solo se pueden subir imágenes PNG, JPEG, GIF o WebP.',
+    imageTooBig: 'La imagen supera los 10 MB.',
+    imageUploadFailed: 'No se pudo subir la imagen.',
+  },
   calendar: {
     title: 'Calendario',
     teamTitle: 'Calendario de {team}',

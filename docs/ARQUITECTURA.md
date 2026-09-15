@@ -70,7 +70,9 @@ Hosting      Vercel (front)  +  Supabase Cloud  +  Liveblocks Cloud
 - **Supabase** como columna vertebral: **Postgres + Auth + Storage + Realtime + RLS**.
   - RLS = aislamiento multi-tenant a nivel base de datos.
   - Alternativa para gestión de equipos ya hecha: **Clerk Organizations**.
-- **Object storage**: Supabase Storage o **Cloudflare R2** (S3-compatible, sin egreso).
+- **Object storage**: Supabase Storage (bucket público `doc-images`, upload directo desde el browser con
+  signed upload URL firmada por el servidor tras chequear rol editor+; cron diario avisa por webhook al
+  80 % de la cuota). **Cloudflare R2** (S3-compatible, sin egreso) queda como plan B si el egreso crece.
 
 ### Infra / hosting
 - **Vercel** → frontend Next.js (deploy automático, CDN global).

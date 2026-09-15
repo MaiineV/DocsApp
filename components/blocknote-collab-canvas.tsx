@@ -24,6 +24,7 @@ import { parseInitialContent, seedUpdateFromBlocks } from '@/lib/blocknote'
 import { schema } from '@/lib/blocknote-schema'
 import { SupabaseYjsProvider } from '@/lib/yjs/supabase-provider'
 import { createClient } from '@/lib/supabase/client'
+import { uploadDocImage, ImageUploadError } from '@/lib/doc-images-client'
 import { persistYdoc, resolveDocUsers } from '@/app/(app)/docs/actions'
 import { useI18n } from '@/components/i18n-provider'
 import { Button } from '@/components/ui/button'
@@ -105,11 +106,42 @@ export default function BlocknoteCollabCanvas({
 
   // 4) Editor colaborativo. SIN initialContent: el contenido vive en el fragment
   //    (pasarlo además lo duplicaría).
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const editorRef = useRef<ReturnType<typeof useCreateBlockNote> | null>(null)
+  const uploadFile = useCallback(
+    async (file: File, blockId?: string) => {
+      try {
+        return await uploadDocImage(file, docId, supabase, t.editor)
+      } catch (e) {
+        if (blockId) {
+          try {
+            editorRef.current?.removeBlocks([blockId])
+          } catch {
+            // the placeholder block may already be gone
+          }
+        }
+        setUploadError(e instanceof ImageUploadError ? e.message : t.editor.imageUploadFailed)
+        throw e
+      }
+    },
+    [docId, supabase, t.editor],
+  )
+
   const editor = useCreateBlockNote({
     schema,
     collaboration: { fragment, user, provider: { awareness: provider.awareness } },
     extensions: [commentsExtension],
+    uploadFile: editable ? uploadFile : undefined,
   })
+  useEffect(() => {
+    editorRef.current = editor
+  }, [editor])
+
+  useEffect(() => {
+    if (!uploadError) return
+    const id = setTimeout(() => setUploadError(null), 5000)
+    return () => clearTimeout(id)
+  }, [uploadError])
 
   // Panel de comentarios (lista de hilos) togglable; solo para editores. El contexto
   // compartido deja que el panel (hermano del editor) lea el mismo editor/hilos.
@@ -225,6 +257,11 @@ export default function BlocknoteCollabCanvas({
           <div className="mb-2 flex justify-end">
             <CommentsToggle open={showComments} onToggle={() => setShowComments((v) => !v)} />
           </div>
+        ) : null}
+        {uploadError ? (
+          <p role="alert" className="mb-2 text-xs text-danger-fg">
+            {uploadError}
+          </p>
         ) : null}
         <BlockNoteView editor={editor} editable={editable} theme={theme} comments={editable}>
           {editable ? (

@@ -46,6 +46,7 @@ export type TeamCalendarLink = {
 export const getTeamCalendarLink = cache(async (teamId: string): Promise<TeamCalendarLink | null> => {
   const supabase = await createClient()
   const { data, error } = await supabase.rpc('get_team_calendar_credentials', { p_team_id: teamId })
+  if (error?.code === '42501') return null
   if (error) throw new Error(error.message)
   const rows = (data ?? []) as TeamCalendarLink[]
   return rows[0] ?? null

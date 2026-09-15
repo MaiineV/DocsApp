@@ -234,6 +234,7 @@ export const es = {
     subtitle: 'Eventos y deadlines de todos tus equipos, cada uno con su color.',
     prevMonth: 'Mes anterior',
     nextMonth: 'Mes siguiente',
+    loading: 'Cargando mes…',
     today: 'Hoy',
     legend: 'Equipos',
     legendHint: 'Clic para ocultar o mostrar',

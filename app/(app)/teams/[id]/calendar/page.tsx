@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/user'
@@ -7,7 +8,7 @@ import { fmt } from '@/lib/i18n/format'
 import { monthRange, parseMonthParam } from '@/lib/calendar/dates'
 import { teamColor } from '@/lib/calendar/colors'
 import { getTeamCalendarStatus, listTeamEvents } from '@/lib/calendar/queries'
-import { syncTeam } from '@/lib/calendar/sync'
+import BackgroundSync from '@/components/calendar/background-sync'
 import MonthView from '@/components/calendar/month-view'
 import SyncStatus from '@/components/calendar/sync-status'
 import type { CalendarEvent } from '@/lib/types'
@@ -19,25 +20,19 @@ export default async function TeamCalendarPage({
   params: Promise<{ id: string }>
   searchParams: Promise<{ m?: string }>
 }) {
-  const [{ id }, { m }, teams, user, locale] = await Promise.all([
-    params,
-    searchParams,
-    getMyTeams(),
-    getAuthUser(),
-    getLocale(),
-  ])
-  const team = teams.find((x) => x.id === id)
-  if (!team || !user) notFound()
-
+  const [{ id }, { m }] = await Promise.all([params, searchParams])
   const month = parseMonthParam(m)
   const range = monthRange(month)
 
-  // Pull from Google (throttled) before listing so fresh events show up.
-  await syncTeam(id)
-  const [events, status] = await Promise.all([
+  const [teams, user, locale, events, status] = await Promise.all([
+    getMyTeams(),
+    getAuthUser(),
+    getLocale(),
     listTeamEvents(id, range.from, range.to),
     getTeamCalendarStatus(id),
   ])
+  const team = teams.find((x) => x.id === id)
+  if (!team || !user) notFound()
 
   const t = getDictionary(locale)
   const canEdit = team.role !== 'viewer'
@@ -65,6 +60,10 @@ export default async function TeamCalendarPage({
         basePath={`/teams/${id}/calendar`}
         showLegend={false}
       />
+
+      <Suspense fallback={null}>
+        <BackgroundSync teamIds={[id]} />
+      </Suspense>
     </div>
   )
 }

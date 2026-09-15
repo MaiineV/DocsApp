@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getHostContext } from '@/lib/calendar/host'
+import { getHostContext, getTeamCalendarLink } from '@/lib/calendar/host'
 import { splitSyncItems, toGoogleEvent, type LocalEventInput } from '@/lib/calendar/google-map'
 import {
   GoogleApiError,
@@ -79,17 +79,23 @@ export async function pushDelete(
   await gDeleteEvent(host.accessToken, host.calendarId, googleEventId)
 }
 
+export function changedSomething(outcome: SyncOutcome): boolean {
+  return outcome.status === 'ok' && outcome.pulled + outcome.pushed > 0
+}
+
 export async function syncTeam(teamId: string, opts: { force?: boolean } = {}): Promise<SyncOutcome> {
   try {
-    const host = await getHostContext(teamId)
-    if (!host) return { status: 'skipped', reason: 'not_hosted' }
+    const link = await getTeamCalendarLink(teamId)
+    if (!link) return { status: 'skipped', reason: 'not_hosted' }
     if (
       !opts.force &&
-      host.lastSyncedAt &&
-      Date.now() - new Date(host.lastSyncedAt).getTime() < SYNC_THROTTLE_MS
+      link.last_synced_at &&
+      Date.now() - new Date(link.last_synced_at).getTime() < SYNC_THROTTLE_MS
     ) {
       return { status: 'skipped', reason: 'throttled' }
     }
+    const host = await getHostContext(teamId)
+    if (!host) return { status: 'skipped', reason: 'not_hosted' }
 
     const supabase = await createClient()
 
@@ -123,6 +129,9 @@ export async function syncTeam(teamId: string, opts: { force?: boolean } = {}): 
 }
 
 // Sync several teams without letting one failure hide the others.
-export async function syncTeams(teamIds: string[], opts: { force?: boolean } = {}): Promise<void> {
-  await Promise.allSettled(teamIds.map((id) => syncTeam(id, opts)))
+export async function syncTeams(teamIds: string[], opts: { force?: boolean } = {}): Promise<SyncOutcome[]> {
+  const results = await Promise.allSettled(teamIds.map((id) => syncTeam(id, opts)))
+  return results.map((r) =>
+    r.status === 'fulfilled' ? r.value : { status: 'error', message: String(r.reason) },
+  )
 }

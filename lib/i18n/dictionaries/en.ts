@@ -234,6 +234,7 @@ export const en: Dictionary = {
     subtitle: 'Events and deadlines from all your teams, each in its own colour.',
     prevMonth: 'Previous month',
     nextMonth: 'Next month',
+    loading: 'Loading month…',
     today: 'Today',
     legend: 'Teams',
     legendHint: 'Click to hide or show',

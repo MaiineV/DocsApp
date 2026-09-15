@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth/user'
@@ -7,7 +8,7 @@ import { monthRange, parseMonthParam } from '@/lib/calendar/dates'
 import { teamColor } from '@/lib/calendar/colors'
 import { isGoogleConfigured } from '@/lib/calendar/oauth'
 import { getMyGoogleEmail, getTeamCalendarStatus, listMyEvents } from '@/lib/calendar/queries'
-import { syncTeams } from '@/lib/calendar/sync'
+import BackgroundSync from '@/components/calendar/background-sync'
 import MonthView from '@/components/calendar/month-view'
 import GoogleConnectCard, { type GoogleTeamRow } from '@/components/calendar/google-connect-card'
 
@@ -23,24 +24,20 @@ export default async function MyCalendarPage({
 }: {
   searchParams: Promise<{ m?: string; google?: string }>
 }) {
-  const [{ m, google }, teams, user, locale] = await Promise.all([
-    searchParams,
-    getMyTeams(),
-    getAuthUser(),
-    getLocale(),
-  ])
-  if (!user) redirect('/login')
-
+  const { m, google } = await searchParams
   const month = parseMonthParam(m)
   const range = monthRange(month)
-  const teamIds = teams.map((x) => x.id)
 
-  await syncTeams(teamIds)
-  const [events, statuses, email] = await Promise.all([
+  const teamsPromise = getMyTeams()
+  const [teams, statuses, user, locale, events, email] = await Promise.all([
+    teamsPromise,
+    teamsPromise.then((list) => Promise.all(list.map((team) => getTeamCalendarStatus(team.id)))),
+    getAuthUser(),
+    getLocale(),
     listMyEvents(range.from, range.to),
-    Promise.all(teamIds.map((id) => getTeamCalendarStatus(id))),
     getMyGoogleEmail(),
   ])
+  if (!user) redirect('/login')
 
   const t = getDictionary(locale)
   const calendarTeams = teams.map((team) => ({
@@ -81,6 +78,10 @@ export default async function MyCalendarPage({
         teams={googleTeams}
         notice={notice}
       />
+
+      <Suspense fallback={null}>
+        <BackgroundSync teamIds={teams.map((team) => team.id)} />
+      </Suspense>
     </div>
   )
 }

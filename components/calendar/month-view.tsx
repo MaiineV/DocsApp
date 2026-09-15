@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useSyncExternalStore, type CSSProperties } from 'react'
-import Link from 'next/link'
+import { useOptimistic, useState, useSyncExternalStore, useTransition, type CSSProperties } from 'react'
+import { useRouter } from 'next/navigation'
 import { useI18n } from '@/components/i18n-provider'
 import { fmt } from '@/lib/i18n/format'
 import {
@@ -32,6 +32,8 @@ const MAX_CHIPS = 3
 const WEEKDAY_SAMPLE = Date.UTC(2024, 0, 1) // a Monday
 
 const noop = () => () => {}
+const parseMonthKey = (key: string): YearMonth | null =>
+  /^d{4}-d{2}/.test(key) ? { year: Number(key.slice(0, 4)), month: Number(key.slice(5, 7)) } : null
 const readTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
 const serverTimeZone = () => null
 
@@ -51,28 +53,37 @@ export default function MonthView({
   showLegend: boolean
 }) {
   const { t, locale } = useI18n()
+  const router = useRouter()
   const tz = useSyncExternalStore(noop, readTimeZone, serverTimeZone)
   const [hidden, setHidden] = useState<Set<string>>(() => new Set())
   const [panel, setPanel] = useState<Panel>({ mode: 'idle' })
+  const [pending, startTransition] = useTransition()
+  const [shownMonth, setShownMonth] = useOptimistic(month)
 
   const editableTeams = teams.filter((x) => x.canEdit)
   const canCreate = editableTeams.length > 0
   const colorOf = new Map(teams.map((x) => [x.id, x.color]))
 
-  const prev = shiftMonth(month, -1)
-  const next = shiftMonth(month, 1)
   const monthLabel = new Intl.DateTimeFormat(locale, {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
-  }).format(new Date(Date.UTC(month.year, month.month - 1, 1)))
+  }).format(new Date(Date.UTC(shownMonth.year, shownMonth.month - 1, 1)))
   const weekdayFmt = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' })
   const weekdays = Array.from({ length: 7 }, (_, i) => weekdayFmt.format(new Date(WEEKDAY_SAMPLE + i * 86_400_000)))
 
   const visible = events.filter((ev) => !hidden.has(ev.team_id))
-  const grid = monthGrid(month, 1)
-  const buckets = tz ? bucketByDay(visible, tz) : new Map<string, CalendarEvent[]>()
+  const grid = monthGrid(shownMonth, 1)
+  const buckets = tz && !pending ? bucketByDay(visible, tz) : new Map<string, CalendarEvent[]>()
   const todayKey = tz ? dayKey(new Date(), tz) : ''
+
+  // Month navigation: the header and grid switch at once, the events follow.
+  function goTo(target: YearMonth | null) {
+    startTransition(() => {
+      setShownMonth(target ?? parseMonthKey(todayKey) ?? month)
+      router.push(target ? `${basePath}?m=${monthKey(target)}` : basePath)
+    })
+  }
 
   const findEvent = (id: string) => events.find((ev) => ev.id === id) ?? null
   // Keep the open event panel in sync with fresh server data after a mutation.
@@ -92,17 +103,25 @@ export default function MonthView({
     <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <section aria-label={t.calendar.title}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold capitalize text-fg">{monthLabel}</h2>
+          <h2 className="flex items-center gap-2 text-lg font-semibold capitalize text-fg">
+            {monthLabel}
+            {pending ? (
+              <span role="status" className="inline-flex items-center">
+                <span aria-hidden className="inline-block size-3.5 animate-spin rounded-full border-2 border-current border-r-transparent text-muted" />
+                <span className="sr-only">{t.calendar.loading}</span>
+              </span>
+            ) : null}
+          </h2>
           <div className="flex items-center gap-1">
-            <Link href={`${basePath}?m=${monthKey(prev)}`} aria-label={t.calendar.prevMonth} className={buttonClasses('ghost', 'sm')}>
+            <button type="button" onClick={() => goTo(shiftMonth(shownMonth, -1))} aria-label={t.calendar.prevMonth} className={buttonClasses('ghost', 'sm')}>
               ‹
-            </Link>
-            <Link href={basePath} className={buttonClasses('secondary', 'sm')}>
+            </button>
+            <button type="button" onClick={() => goTo(null)} className={buttonClasses('secondary', 'sm')}>
               {t.calendar.today}
-            </Link>
-            <Link href={`${basePath}?m=${monthKey(next)}`} aria-label={t.calendar.nextMonth} className={buttonClasses('ghost', 'sm')}>
+            </button>
+            <button type="button" onClick={() => goTo(shiftMonth(shownMonth, 1))} aria-label={t.calendar.nextMonth} className={buttonClasses('ghost', 'sm')}>
               ›
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -135,7 +154,11 @@ export default function MonthView({
         {tz === null ? (
           <Skeleton className="mt-4 h-[28rem] w-full" />
         ) : (
-          <div role="grid" className="mt-4 overflow-hidden rounded-lg border border-border">
+          <div
+            role="grid"
+            aria-busy={pending}
+            className={`mt-4 overflow-hidden rounded-lg border border-border transition-opacity ${pending ? 'opacity-60' : ''}`}
+          >
             <div role="row" className="grid grid-cols-7 border-b border-border bg-surface-sunken text-center text-[11px] font-medium uppercase tracking-wide text-muted">
               {weekdays.map((w) => (
                 <div key={w} role="columnheader" className="py-1.5">

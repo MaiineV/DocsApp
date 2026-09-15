@@ -44,6 +44,9 @@ export default async function TeamMembersPage({ params }: { params: Promise<{ id
       </Link>
       <h1 className="mt-3 text-2xl font-semibold tracking-tight">{team.name}</h1>
       <p className="mt-1 text-sm text-zinc-500">{fmt(t.members.subtitle, { role: team.role })}</p>
+      <Link href={`/teams/${id}/calendar`} className="mt-2 inline-block text-sm font-medium text-fg hover:underline">
+        {t.members.calendarLink}
+      </Link>
 
       {canManage ? (
         <section className="mt-8">
@@ -85,6 +88,7 @@ export default async function TeamMembersPage({ params }: { params: Promise<{ id
       <TeamSettings
         teamId={id}
         currentName={team.name}
+        currentColor={team.color}
         canRename={canManage}
         canDelete={team.role === 'owner'}
       />

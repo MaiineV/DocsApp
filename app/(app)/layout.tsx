@@ -56,6 +56,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
                 {t.header.manageTeam}
               </Link>
             ) : null}
+            {active ? (
+              <Link
+                href={`/teams/${active.id}/calendar`}
+                className="hidden rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-ghost hover:text-fg sm:inline-flex"
+              >
+                {t.header.calendar}
+              </Link>
+            ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
             <HeaderSearch />

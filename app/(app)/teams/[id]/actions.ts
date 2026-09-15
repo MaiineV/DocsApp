@@ -4,10 +4,14 @@ import { randomBytes } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthUser } from '@/lib/auth/user'
 import { ACTIVE_TEAM_COOKIE } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
+import { HEX_COLOR_RE, teamColor } from '@/lib/calendar/colors'
+import { getHostContext } from '@/lib/calendar/host'
+import { setCalendarColor } from '@/lib/calendar/google-client'
 import type { Role } from '@/lib/types'
 
 type Result = { ok: boolean; error?: string }
@@ -81,6 +85,38 @@ export async function renameTeam(teamId: string, name: string): Promise<Result> 
   if (!data || data.length === 0) return { ok: false, error: t.errors.noRenamePermission }
 
   revalidatePath(`/teams/${teamId}`)
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+// Color del team (calendario). RLS `teams_update` exige admin+. Null = paleta
+// por defecto. Si el calendario está hospedado en Google, se replica allí.
+export async function setTeamColor(teamId: string, color: string | null): Promise<Result> {
+  const t = getDictionary(await getLocale())
+  if (color !== null && !HEX_COLOR_RE.test(color)) return { ok: false, error: t.calendar.invalidColor }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('teams')
+    .update({ color })
+    .eq('id', teamId)
+    .select('id, color')
+
+  if (error) return { ok: false, error: error.message }
+  if (!data || data.length === 0) return { ok: false, error: t.errors.noRenamePermission }
+
+  after(async () => {
+    const host = await getHostContext(teamId).catch(() => null)
+    if (host) {
+      await setCalendarColor(host.accessToken, host.calendarId, teamColor({ id: teamId, color })).catch(
+        () => undefined,
+      )
+    }
+  })
+
+  revalidatePath(`/teams/${teamId}`)
+  revalidatePath(`/teams/${teamId}/calendar`)
+  revalidatePath('/profile/calendar')
   revalidatePath('/', 'layout')
   return { ok: true }
 }

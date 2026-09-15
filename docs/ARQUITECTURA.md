@@ -4,7 +4,7 @@
 > con almacenamiento en la nube, equipos, management y colaboradores por equipo,
 > y múltiples equipos por cuenta. Referencia: Loop, Coda, Notion.
 
-**Última actualización:** 2026-07-13
+**Última actualización:** 2026-09-15
 
 ---
 
@@ -147,6 +147,14 @@ User (cuenta)
 5. **Escala** — migrar sync a self-host si el costo lo pide; comentarios ✅ (Fase 13), historial de
    versiones ✅ (Fase 14: captura por trigger con coalescing + restore no destructivo por delta CRDT),
    menciones ✅ (chips @doc).
+6. **Calendario por equipo** ✅ — `team_events` (eventos/deadlines, RLS editor+), vista mensual por
+   equipo (`/teams/[id]/calendar`) y consolidada en el perfil (`/profile/calendar`, un color por
+   equipo). Sync bidireccional opcional con Google Calendar: un owner "hospeda" el calendario del
+   equipo como calendario secundario en su cuenta (`team_calendar_links`), los miembros pueden pedir
+   verlo en la suya (ACL de Google, `team_calendar_shares`). Tokens cifrados AES-256-GCM
+   (`google_connections`). Pull incremental con `syncToken` al abrir el calendario (throttle 60 s) +
+   push de filas pendientes; RPCs SECURITY DEFINER gated por membership para que cualquier miembro
+   dispare el sync con las credenciales del host. Sin cron ni webhooks (decisión: menos piezas).
 
 ### Primeros pasos concretos (Fase 0)
 1. `create-next-app` con TypeScript + App Router + Tailwind.

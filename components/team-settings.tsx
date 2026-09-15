@@ -5,15 +5,18 @@ import { renameTeam, deleteTeam } from '@/app/(app)/teams/[id]/actions'
 import { useI18n } from '@/components/i18n-provider'
 import { Alert } from '@/components/ui/alert'
 import { buttonClasses } from '@/components/ui/button'
+import TeamColorPicker from '@/components/calendar/team-color-picker'
 
 export default function TeamSettings({
   teamId,
   currentName,
+  currentColor,
   canRename,
   canDelete,
 }: {
   teamId: string
   currentName: string
+  currentColor: string | null
   canRename: boolean
   canDelete: boolean
 }) {
@@ -86,6 +89,7 @@ export default function TeamSettings({
               {renameError}
             </Alert>
           ) : null}
+          <TeamColorPicker teamId={teamId} currentColor={currentColor} />
         </>
       ) : null}
 

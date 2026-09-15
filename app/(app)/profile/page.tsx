@@ -29,7 +29,10 @@ export default async function ProfilePage() {
         canChangePassword={canChangePassword}
       />
 
-      <div className="mt-10 border-t border-border pt-6">
+      <div className="mt-10 flex flex-col gap-3 border-t border-border pt-6">
+        <Link href="/profile/calendar" className="text-sm font-medium text-fg hover:underline">
+          {t.profile.calendarLink}
+        </Link>
         <Link href="/profile/tokens" className="text-sm font-medium text-fg hover:underline">
           {t.tokens.link}
         </Link>

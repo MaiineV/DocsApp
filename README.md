@@ -46,6 +46,10 @@ editors):
   state, capped per doc). Browse, preview and **restore non-destructively**: the current state is
   checkpointed first and the restore lands **live** in open editors via the same CRDT delta pipeline
   the API uses.
+- 📅 **Team calendars** — events and deadlines per team, a personal month view across all your teams
+  (one colour per team), and optional **two-way Google Calendar sync**: a team owner hosts the team
+  calendar in their Google account, members can add it to theirs, and what anyone creates on either
+  side shows up on the other. See [Google Calendar sync](#google-calendar-sync).
 
 ## Architecture highlights
 
@@ -80,6 +84,20 @@ Admins create an invitation (email + role + expiry) and get a copyable link. The
 paths go through `SECURITY DEFINER` RPCs (the `invitations` table itself is admin-only), so there's no
 email enumeration and `auth.users` is never exposed. Accepting is idempotent, single-use, and never
 grants `owner`. `?next` is preserved through login/signup and sanitized against open-redirects.
+
+### Google Calendar sync
+Each team gets **one** Google calendar, created as a secondary calendar in the account of the **owner who
+hosts it** (`team_calendar_links`), so nobody ends up with calendars for teams they merely belong to.
+Members who connect their own Google can ask to *see it in my Google*: DocsApp shares the host's
+calendar with their verified Google email through Google's ACL API, using the host's token. Refresh
+tokens are stored **AES-256-GCM encrypted** (`GOOGLE_TOKEN_ENC_KEY`) and only ever decrypted on the
+server. Sync is two-way and runs on demand: opening a calendar pulls changes **incrementally**
+(`syncToken`, throttled to once a minute, plus a *Sync now* button) and pushes rows that were never
+uploaded or were edited after their last sync. Any member may trigger it even though it uses the host's
+credentials: the RLS-sensitive steps (`get_team_calendar_credentials`, `apply_google_sync`,
+`mark_event_synced`) are `SECURITY DEFINER` RPCs gated by team membership, and the credentials RPC only
+ever returns ciphertext. A loop guard (`google_updated_at`) stops our own pushes from being re-imported.
+No `googleapis` dependency: the client is a thin `fetch` wrapper.
 
 ### REST API for local tooling
 A versioned REST API (`/api/v1`) lets an external project operate your docs programmatically, authenticated
@@ -127,7 +145,17 @@ PostgREST, so team roles gate every call (no parallel authorization logic). High
    ```
 4. **(Optional) Google sign-in** — enable the Google provider in Supabase Auth and add your app's
    `/auth/callback` to the redirect allowlist.
-5. **Run**
+5. **(Optional) Google Calendar sync** — in Google Cloud Console enable the **Google Calendar API** and
+   add `<NEXT_PUBLIC_SITE_URL>/auth/google-calendar/callback` as an authorized redirect URI of an OAuth
+   client (the one used for Supabase sign-in works). Then add to `.env.local`:
+   ```bash
+   GOOGLE_OAUTH_CLIENT_ID=<oauth-client-id>
+   GOOGLE_OAUTH_CLIENT_SECRET=<oauth-client-secret>
+   # 32 random bytes, base64 — encrypts refresh tokens at rest
+   GOOGLE_TOKEN_ENC_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))")
+   ```
+   Without these the app still works; the profile page just reports the integration as not configured.
+6. **Run**
    ```bash
    npm run dev
    ```
@@ -142,14 +170,15 @@ Two layers:
 - **Unit / integration — [Vitest](https://vitest.dev):** pure logic with no external infra, runs in CI.
   Covers the open-redirect sanitizer (`safeNext`), the document tree builder (`buildDocTree` /
   `collectDescendantIds`), i18n interpolation (`fmt`), the Yjs base64 encoding + CRDT merge
-  (commutative / idempotent), and the API's Markdown ↔ blocks round-trip (jsdom).
+  (commutative / idempotent), the API's Markdown ↔ blocks round-trip (jsdom), and the calendar's
+  date math, Google event mapping and token encryption.
   ```bash
   npm test          # run once
   npm run test:watch
   ```
 - **End-to-end — [Playwright](https://playwright.dev):** critical flows in a real browser against the dev
-  server. Covers login → create document → title persists across reload → delete, and the dark-mode toggle
-  (`data-theme` changes and persists). Needs a test account — copy `.env.test.example` to `.env.test` and
+  server. Covers login → create document → title persists across reload → delete, the dark-mode toggle
+  (`data-theme` changes and persists), and the team calendar (create → edit → delete an event). Needs a test account — copy `.env.test.example` to `.env.test` and
   fill it in:
   ```bash
   npx playwright install chromium   # once
@@ -184,5 +213,5 @@ proxy.ts             # Next.js 16 middleware (session refresh + route guard)
 Built in phases: **0** auth + multi-tenant + RLS · **1** rich-text editor · **2** real-time
 collaboration (Yjs over Supabase Realtime) · **3** teams + invitations · **+** Google OAuth · **6** user
 profiles · **7** REST API (`/api/v1`, Bearer auth, Markdown, live edits) · plus full-text search, trash
-with restore, public share links, inline comments, drag & drop page organization and **version history
-with non-destructive restore**. Core is feature-complete; deployed on Vercel against Supabase.
+with restore, public share links, inline comments, drag & drop page organization, **version history
+with non-destructive restore** and **team calendars with Google Calendar sync**. Core is feature-complete; deployed on Vercel against Supabase.

@@ -7,6 +7,7 @@ import type { Role } from '@/lib/types'
 export type TeamWithRole = {
   id: string
   name: string
+  color: string | null
   role: Role
 }
 
@@ -37,7 +38,7 @@ export const getMyTeams = cache(async (): Promise<TeamWithRole[]> => {
   // un team donde es viewer como si fuera owner).
   const { data, error } = await supabase
     .from('memberships')
-    .select('role, teams(id, name)')
+    .select('role, teams(id, name, color)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: true })
 
@@ -45,10 +46,11 @@ export const getMyTeams = cache(async (): Promise<TeamWithRole[]> => {
 
   // many-to-one: en runtime `teams` es un objeto, pero supabase-js (sin tipos
   // generados) lo infiere como array -> casteamos vía unknown.
-  type Row = { role: Role; teams: { id: string; name: string } | null }
+  type TeamCols = { id: string; name: string; color: string | null }
+  type Row = { role: Role; teams: TeamCols | null }
   return ((data ?? []) as unknown as Row[])
-    .filter((m): m is Row & { teams: { id: string; name: string } } => m.teams !== null)
-    .map((m) => ({ id: m.teams.id, name: m.teams.name, role: m.role }))
+    .filter((m): m is Row & { teams: TeamCols } => m.teams !== null)
+    .map((m) => ({ id: m.teams.id, name: m.teams.name, color: m.teams.color, role: m.role }))
 })
 
 // Team activo: el de la cookie si el usuario sigue siendo miembro, si no el

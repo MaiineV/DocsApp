@@ -9,8 +9,18 @@ export const OAUTH_STATE_COOKIE = 'gcal_oauth_state'
 export const CALLBACK_PATH = '/auth/google-calendar/callback'
 
 // Public origin for OAuth redirect URIs (must match the Google Cloud console).
+// Normalised through URL so a trailing slash or path in the env var cannot
+// produce a redirect_uri Google rejects.
 export function siteOrigin(request: Request): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin
+  const configured = process.env.NEXT_PUBLIC_SITE_URL
+  if (configured) {
+    try {
+      return new URL(configured).origin
+    } catch {
+      // fall through to the request origin
+    }
+  }
+  return new URL(request.url).origin
 }
 
 export function isGoogleConfigured(): boolean {

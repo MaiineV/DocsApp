@@ -9,6 +9,7 @@ import Avatar from '@/components/avatar'
 import { Alert } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonClasses } from '@/components/ui/button'
+import Listbox from '@/components/ui/listbox'
 import type { Role, TeamMember } from '@/lib/types'
 
 const ALL_ROLES: Role[] = ['viewer', 'editor', 'admin', 'owner']
@@ -93,19 +94,14 @@ export default function MembersList({
 
               <div className="flex shrink-0 items-center gap-2">
                 {canManage ? (
-                  <select
-                    aria-label={fmt(t.members.roleOf, { email: m.email })}
+                  <Listbox
+                    ariaLabel={fmt(t.members.roleOf, { email: m.email })}
                     value={m.role}
+                    options={options}
+                    labels={t.roles}
                     disabled={!roleEditable || isPending}
-                    onChange={(e) => onRoleChange(m.user_id, e.target.value as Role)}
-                    className="rounded-md border border-input bg-transparent px-2 py-1 text-sm outline-none disabled:opacity-50"
-                  >
-                    {options.map((r) => (
-                      <option key={r} value={r}>
-                        {t.roles[r]}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(role) => onRoleChange(m.user_id, role)}
+                  />
                 ) : (
                   <Badge variant="neutral">{t.roles[m.role]}</Badge>
                 )}

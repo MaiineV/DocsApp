@@ -5,7 +5,8 @@ import { createApiToken, revokeApiToken } from '@/app/(app)/profile/tokens/actio
 import { useI18n } from '@/components/i18n-provider'
 import { fmt } from '@/lib/i18n/format'
 import type { ApiTokenRow, ApiTokenScope } from '@/lib/types'
-import { Input, Select, Field } from '@/components/ui/input'
+import { Input, Field } from '@/components/ui/input'
+import Listbox from '@/components/ui/listbox'
 import { buttonClasses } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert } from '@/components/ui/alert'
@@ -77,17 +78,22 @@ export default function ApiTokensManager({
           />
         </Field>
         <Field label={t.tokens.scope}>
-          <Select value={scope} onChange={(e) => setScope(e.target.value as ApiTokenScope)}>
-            <option value="read_write">{t.tokens.scopeReadWrite}</option>
-            <option value="read">{t.tokens.scopeRead}</option>
-          </Select>
+          <Listbox
+            ariaLabel={t.tokens.scope}
+            value={scope}
+            options={['read_write', 'read']}
+            labels={{ read_write: t.tokens.scopeReadWrite, read: t.tokens.scopeRead }}
+            onChange={setScope}
+          />
         </Field>
         <Field label={t.tokens.expiry}>
-          <Select value={expiry} onChange={(e) => setExpiry(e.target.value as ExpiryChoice)}>
-            <option value="never">{t.tokens.expiryNever}</option>
-            <option value="30">{t.tokens.expiry30}</option>
-            <option value="90">{t.tokens.expiry90}</option>
-          </Select>
+          <Listbox
+            ariaLabel={t.tokens.expiry}
+            value={expiry}
+            options={['never', '30', '90']}
+            labels={{ never: t.tokens.expiryNever, '30': t.tokens.expiry30, '90': t.tokens.expiry90 }}
+            onChange={setExpiry}
+          />
         </Field>
         <button
           type="submit"

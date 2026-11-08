@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, SelectHTMLAttributes, ReactNode } from 'react'
+import type { InputHTMLAttributes, ReactNode } from 'react'
 
 // Clases compartidas de control de formulario (input/select). Incluye focus ring
 // con el token (antes era `outline-none` sin reemplazo → roto para teclado).
@@ -9,18 +9,6 @@ export const controlClasses =
 
 export function Input({ className = '', ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`${controlClasses} ${className}`} {...props} />
-}
-
-export function Select({
-  className = '',
-  children,
-  ...props
-}: SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select className={`${controlClasses} ${className}`} {...props}>
-      {children}
-    </select>
-  )
 }
 
 // Campo con label asociado (la label envuelve el control → asociación implícita,

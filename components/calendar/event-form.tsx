@@ -5,7 +5,8 @@ import { createEvent, updateEvent, type EventInput } from '@/app/(app)/teams/[id
 import { useI18n } from '@/components/i18n-provider'
 import { allDayKeys, isoToLocalInput, localInputToIso, toAllDayRange } from '@/lib/calendar/dates'
 import type { CalendarEvent, EventKind } from '@/lib/types'
-import { Field, Input, Select, controlClasses } from '@/components/ui/input'
+import { Field, Input, controlClasses } from '@/components/ui/input'
+import Listbox from '@/components/ui/listbox'
 import { buttonClasses } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 
@@ -90,13 +91,13 @@ export default function EventForm({
 
       {teams.length > 1 && !initial ? (
         <Field label={t.calendar.team}>
-          <Select value={teamId} onChange={(e) => setTeamId(e.target.value)}>
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </Select>
+          <Listbox
+            ariaLabel={t.calendar.team}
+            value={teamId}
+            options={teams.map((team) => team.id)}
+            labels={Object.fromEntries(teams.map((team) => [team.id, team.name]))}
+            onChange={setTeamId}
+          />
         </Field>
       ) : null}
 
@@ -113,10 +114,13 @@ export default function EventForm({
 
       <div className="grid grid-cols-2 gap-2">
         <Field label={t.calendar.kind}>
-          <Select value={kind} onChange={(e) => setKind(e.target.value as EventKind)}>
-            <option value="event">{t.calendar.kindEvent}</option>
-            <option value="deadline">{t.calendar.kindDeadline}</option>
-          </Select>
+          <Listbox
+            ariaLabel={t.calendar.kind}
+            value={kind}
+            options={['event', 'deadline']}
+            labels={{ event: t.calendar.kindEvent, deadline: t.calendar.kindDeadline }}
+            onChange={setKind}
+          />
         </Field>
         <label className="flex items-end gap-2 pb-2 text-sm text-fg">
           <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} className="size-4" />

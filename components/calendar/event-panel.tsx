@@ -73,7 +73,7 @@ export default function EventPanel({
       </div>
       <p className="mt-2 text-sm text-fg">{formatRange(event, locale)}</p>
       {event.description ? (
-        <p className="mt-2 whitespace-pre-wrap text-sm text-muted">{event.description}</p>
+        <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted">{event.description}</p>
       ) : null}
 
       {canEdit ? (

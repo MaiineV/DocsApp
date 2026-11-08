@@ -5,14 +5,12 @@ import { getAuthUser } from '@/lib/auth/user'
 import { getActiveTeam, getMyTeams } from '@/lib/teams'
 import { getMyProfile } from '@/lib/profile'
 import { displayName } from '@/lib/collab'
-import { getDictionary, getLocale } from '@/lib/i18n'
-import { signOut } from '@/app/login/actions'
 import TeamSwitcher from '@/components/team-switcher'
 import { DocTitleProvider } from '@/components/doc-title-context'
-import Avatar from '@/components/avatar'
 import ThemeToggle from '@/components/theme-toggle'
 import HeaderSearch from '@/components/header-search'
-import { SubmitButton } from '@/components/submit-button'
+import CalendarNavLink from '@/components/calendar-nav-link'
+import AccountMenu from '@/components/account-menu'
 
 // Shell del área autenticada. El proxy ya redirige a /login si no hay sesión;
 // acá repetimos el chequeo como defensa en profundidad (getAuthUser verifica
@@ -27,7 +25,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   if (!user) redirect('/login')
 
-  const t = getDictionary(await getLocale())
   const display = displayName(profile?.nickname, user.email)
 
   return (
@@ -40,7 +37,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           scrollear la página entera. Las demás páginas desbordan <main> y el
           documento scrollea normal. */}
       <div className="flex h-dvh flex-col">
-        <header className="flex items-center justify-between border-b border-black/10 px-4 py-3 sm:px-6 dark:border-white/10">
+        <header className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <Link href="/docs" className="shrink-0 font-semibold tracking-tight">
               DocsApp
@@ -49,40 +46,16 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
               <TeamSwitcher teams={teams} activeTeamId={active?.id ?? null} />
             ) : null}
             {active ? (
-              <Link
-                href={`/teams/${active.id}`}
-                className="hidden rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-ghost hover:text-fg sm:inline-flex"
-              >
-                {t.header.manageTeam}
-              </Link>
-            ) : null}
-            {active ? (
-              <Link
-                href={`/teams/${active.id}/calendar`}
-                className="hidden rounded-md px-2 py-1 text-xs font-medium text-muted transition-colors hover:bg-ghost hover:text-fg sm:inline-flex"
-              >
-                {t.header.calendar}
-              </Link>
+              <>
+                <span aria-hidden className="h-5 w-px shrink-0 bg-border" />
+                <CalendarNavLink teamId={active.id} />
+              </>
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2 text-sm sm:gap-3">
             <HeaderSearch />
             <ThemeToggle />
-            <Link
-              href="/profile"
-              aria-label={t.profile.title}
-              className="flex items-center gap-2 rounded-full py-0.5 pl-0.5 pr-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-            >
-              <Avatar src={profile?.avatar_url} name={display} seed={user.id} size={26} />
-              <span className="hidden max-w-[10rem] truncate text-zinc-600 sm:inline dark:text-zinc-300">
-                {display}
-              </span>
-            </Link>
-            <form action={signOut}>
-              <SubmitButton className="rounded-md border border-black/15 px-3 py-2 font-medium transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/5">
-                {t.header.signOut}
-              </SubmitButton>
-            </form>
+            <AccountMenu userId={user.id} avatarUrl={profile?.avatar_url ?? null} displayName={display} />
           </div>
         </header>
         <main className="flex min-h-0 flex-1 flex-col">{children}</main>

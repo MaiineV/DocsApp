@@ -6,7 +6,8 @@ import { useI18n } from '@/components/i18n-provider'
 import { fmt } from '@/lib/i18n/format'
 import type { Role } from '@/lib/types'
 import { Alert } from '@/components/ui/alert'
-import { Input, Select, Field } from '@/components/ui/input'
+import { Input, Field } from '@/components/ui/input'
+import Listbox from '@/components/ui/listbox'
 import { buttonClasses } from '@/components/ui/button'
 
 // owner nunca se invita (lo bloquean el CHECK y la RLS).
@@ -19,14 +20,14 @@ export default function InviteForm({ teamId }: { teamId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [role, setRole] = useState<Role>('editor')
+  const [ttl, setTtl] = useState(7)
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget
     const data = new FormData(form)
     const email = String(data.get('email') ?? '')
-    const role = String(data.get('role') ?? 'viewer') as Role
-    const ttl = Number(data.get('ttl') ?? 7)
     setError(null)
     setLink(null)
     setCopied(false)
@@ -38,6 +39,8 @@ export default function InviteForm({ teamId }: { teamId: string }) {
       }
       setLink(`${window.location.origin}/invite/${res.token}`)
       form.reset()
+      setRole('editor')
+      setTtl(7)
     })
   }
 
@@ -60,22 +63,18 @@ export default function InviteForm({ teamId }: { teamId: string }) {
           />
         </Field>
         <Field label={t.invite.role}>
-          <Select name="role" defaultValue="editor">
-            {INVITE_ROLES.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </Select>
+          <Listbox ariaLabel={t.invite.role} value={role} options={INVITE_ROLES} labels={t.roles} onChange={setRole} />
         </Field>
         <Field label={t.invite.expires}>
-          <Select name="ttl" defaultValue="7">
-            {TTL_OPTIONS.map((d) => (
-              <option key={d} value={d}>
-                {d === 1 ? t.invite.day : fmt(t.invite.days, { n: d })}
-              </option>
-            ))}
-          </Select>
+          <Listbox
+            ariaLabel={t.invite.expires}
+            value={String(ttl)}
+            options={TTL_OPTIONS.map(String)}
+            labels={Object.fromEntries(
+              TTL_OPTIONS.map((d) => [String(d), d === 1 ? t.invite.day : fmt(t.invite.days, { n: d })]),
+            )}
+            onChange={(v) => setTtl(Number(v))}
+          />
         </Field>
         <button
           type="submit"

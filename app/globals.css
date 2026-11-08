@@ -12,6 +12,10 @@
    expone como utilidades de Tailwind (bg-surface, text-muted, …).
 ─────────────────────────────────────────────────────────── */
 :root {
+  /* Sin esto, los controles nativos (el popup de <select>, scrollbars) se
+     pintan con los colores del SO en vez de seguir `data-theme`. */
+  color-scheme: light;
+
   --bg: #ffffff;            /* fondo de página */
   --surface: #ffffff;      /* cards, dropdowns, header */
   --surface-sunken: #f4f4f5;/* paneles read-only, code */
@@ -45,6 +49,8 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
+
   --bg: #0a0a0a;
   --surface: #18181b;       /* zinc-900 */
   --surface-sunken: #27272a;/* zinc-800 */

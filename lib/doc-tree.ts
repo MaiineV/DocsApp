@@ -60,3 +60,29 @@ export function collectDescendantIds(rows: DocRow[], id: string): Set<string> {
   }
   return out
 }
+
+// Subárbol de `rootId` aplanado en pre-order (padre, luego cada hijo con todo su
+// subárbol), en el mismo orden que la sidebar. `depth` 0 = la raíz. Lo usa el
+// export a PDF (`/print/[id]`) para concatenar páginas en orden. [] si no existe.
+export function flattenSubtree<T extends DocRow>(
+  rows: T[],
+  rootId: string,
+): { node: DocNode<T>; depth: number }[] {
+  const find = (nodes: DocNode<T>[]): DocNode<T> | undefined => {
+    for (const n of nodes) {
+      if (n.id === rootId) return n
+      const hit = find(n.children)
+      if (hit) return hit
+    }
+    return undefined
+  }
+  const root = find(buildDocTree(rows))
+  if (!root) return []
+  const out: { node: DocNode<T>; depth: number }[] = []
+  const walk = (n: DocNode<T>, depth: number) => {
+    out.push({ node: n, depth })
+    for (const c of n.children) walk(c, depth + 1)
+  }
+  walk(root, 0)
+  return out
+}

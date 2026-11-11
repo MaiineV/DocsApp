@@ -402,6 +402,16 @@ export const es = {
     restoreError: 'No se pudo restaurar la versión.',
     backToDoc: 'Volver al documento',
   },
+  print: {
+    exportPdf: 'Exportar PDF',
+    toc: 'Contenido',
+    exportedAt: 'Exportado el {date}',
+    pageCount: '{count} páginas',
+    truncated: 'El documento tiene más de {max} páginas: el PDF incluye solo las primeras {max}.',
+    printButton: 'Imprimir / Guardar PDF',
+    hint: 'En el diálogo de impresión elegí “Guardar como PDF” como destino.',
+    back: 'Volver al documento',
+  },
 }
 
 export type Dictionary = typeof es

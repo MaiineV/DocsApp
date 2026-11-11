@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildDocTree, collectDescendantIds, type DocRow } from '@/lib/doc-tree'
+import { buildDocTree, collectDescendantIds, flattenSubtree, type DocRow } from '@/lib/doc-tree'
 
 const rows: DocRow[] = [
   { id: 'a', title: 'Alpha', parent_id: null },
@@ -68,5 +68,44 @@ describe('collectDescendantIds', () => {
 
   it('returns an empty set for a leaf', () => {
     expect(collectDescendantIds(rows, 'd').size).toBe(0)
+  })
+})
+
+describe('flattenSubtree', () => {
+  // Arrange (compartido, inmutable): r → [c1 → g1, c2], con posiciones desordenadas.
+  const tree: DocRow[] = [
+    { id: 'r', title: 'Root', parent_id: null, position: 0 },
+    { id: 'c2', title: 'Second', parent_id: 'r', position: 2 },
+    { id: 'c1', title: 'First', parent_id: 'r', position: 1 },
+    { id: 'g1', title: 'Grandchild', parent_id: 'c1', position: 0 },
+    { id: 'other', title: 'Other root', parent_id: null, position: 1 },
+  ]
+
+  it('should return the subtree in pre-order following position when given a root', () => {
+    // Act
+    const out = flattenSubtree(tree, 'r')
+
+    // Assert
+    expect(out.map((x) => x.node.id)).toEqual(['r', 'c1', 'g1', 'c2'])
+    expect(out.map((x) => x.depth)).toEqual([0, 1, 2, 1])
+  })
+
+  it('should start at a nested node when given a non-root id', () => {
+    // Act
+    const out = flattenSubtree(tree, 'c1')
+
+    // Assert
+    expect(out.map((x) => [x.node.id, x.depth])).toEqual([
+      ['c1', 0],
+      ['g1', 1],
+    ])
+  })
+
+  it('should return an empty list when the id does not exist', () => {
+    // Act
+    const out = flattenSubtree(tree, 'nope')
+
+    // Assert
+    expect(out).toEqual([])
   })
 })

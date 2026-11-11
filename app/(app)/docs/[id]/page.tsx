@@ -53,19 +53,31 @@ export default async function DocPage({ params }: { params: Promise<{ id: string
         <Link href="/docs" className="text-sm text-zinc-500 hover:underline">
           {t.common.backToDocs}
         </Link>
-        {canEdit ? (
-          <div className="flex items-center gap-2">
-            <Link href={`/docs/${doc.id}/versions`} className={buttonClasses('secondary', 'sm')}>
-              {t.versions.link}
-            </Link>
-            <ShareDialog docId={doc.id} initialShare={share} />
-            <form action={del}>
-              <SubmitButton className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950">
-                {t.docs.delete}
-              </SubmitButton>
-            </form>
-          </div>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {/* Export a PDF (página + subpáginas): cualquier miembro, también viewers.
+              Pestaña nueva + <a> plano → carga completa (el print fuerza tema claro). */}
+          <a
+            href={`/print/${doc.id}`}
+            target="_blank"
+            rel="noopener"
+            className={buttonClasses('secondary', 'sm')}
+          >
+            {t.print.exportPdf}
+          </a>
+          {canEdit ? (
+            <>
+              <Link href={`/docs/${doc.id}/versions`} className={buttonClasses('secondary', 'sm')}>
+                {t.versions.link}
+              </Link>
+              <ShareDialog docId={doc.id} initialShare={share} />
+              <form action={del}>
+                <SubmitButton className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950">
+                  {t.docs.delete}
+                </SubmitButton>
+              </form>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <CollabDocEditor

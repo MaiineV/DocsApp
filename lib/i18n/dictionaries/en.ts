@@ -402,4 +402,14 @@ export const en: Dictionary = {
     restoreError: 'Could not restore the version.',
     backToDoc: 'Back to document',
   },
+  print: {
+    exportPdf: 'Export PDF',
+    toc: 'Contents',
+    exportedAt: 'Exported on {date}',
+    pageCount: '{count} pages',
+    truncated: 'This document has more than {max} pages: the PDF only includes the first {max}.',
+    printButton: 'Print / Save as PDF',
+    hint: 'In the print dialog, choose “Save as PDF” as the destination.',
+    back: 'Back to document',
+  },
 }

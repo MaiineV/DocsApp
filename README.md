@@ -171,7 +171,19 @@ PostgREST, so team roles gate every call (no parallel authorization logic). High
    STORAGE_QUOTA_BYTES=1073741824                 # optional, default 1 GiB (Supabase Free)
    STORAGE_ALERT_PCT=80                           # optional, default 80
    ```
-8. **Run**
+8. **Retention** — [`vercel.json`](vercel.json) also schedules `GET /api/cron/retention` daily (same
+   `CRON_SECRET`). It hard-deletes documents that have been in the trash longer than 30 days (with their
+   versions, shares and images) and keeps at most 10 versions per document, none older than 30 days except
+   the newest. Versions store only the Yjs snapshot. Optional overrides:
+   ```bash
+   TRASH_RETENTION_DAYS=30
+   VERSION_RETENTION_DAYS=30
+   VERSION_CAP=10                                 # the edit trigger itself always caps at 10 / 30 days
+   PURGE_BATCH_LIMIT=500                          # documents purged per run
+   ```
+   Deleted rows only free space for reuse; run `VACUUM FULL public.document_versions, public.documents;`
+   in the SQL Editor once to shrink the database after the first cleanup.
+9. **Run**
    ```bash
    npm run dev
    ```

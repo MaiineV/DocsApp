@@ -23,6 +23,7 @@ test('borrar → papelera → restaurar → vuelve → borrar definitivo', async
   await page.goto('/docs/trash')
   const row = page.locator('li').filter({ hasText: token })
   await expect(row).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText(/deleted forever 30 days after/)).toBeVisible()
 
   // Restaurar → desaparece de la papelera y vuelve a /docs.
   await row.getByRole('button', { name: 'Restore' }).click()

@@ -29,6 +29,7 @@ export const en: Dictionary = {
     link: 'Trash',
     title: 'Trash',
     empty: 'The trash is empty.',
+    autoPurge: 'Documents are deleted forever {days} days after they are moved to the trash.',
     deletedAt: 'Deleted on {date}',
     restore: 'Restore',
     deleteForever: 'Delete permanently',

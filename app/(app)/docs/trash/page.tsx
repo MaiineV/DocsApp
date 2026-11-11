@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveTeam } from '@/lib/teams'
 import { getDictionary, getLocale } from '@/lib/i18n'
+import { fmt } from '@/lib/i18n/format'
+import { retentionConfig } from '@/lib/retention'
 import TrashList from '@/components/trash-list'
 
 // Papelera del team activo: documentos con `deleted_at` (soft-deleted). Restaurar
@@ -41,6 +43,9 @@ export default async function TrashPage() {
           {t.common.backToDocs}
         </Link>
       </div>
+      <p className="mt-2 text-sm text-muted">
+        {fmt(t.trash.autoPurge, { days: retentionConfig().trashDays })}
+      </p>
 
       <TrashList items={items} canEdit={canEdit} locale={locale} />
     </div>

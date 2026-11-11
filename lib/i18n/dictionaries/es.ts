@@ -29,6 +29,7 @@ export const es = {
     link: 'Papelera',
     title: 'Papelera',
     empty: 'La papelera está vacía.',
+    autoPurge: 'Los documentos se borran para siempre {days} días después de llegar a la papelera.',
     deletedAt: 'Borrado el {date}',
     restore: 'Restaurar',
     deleteForever: 'Borrar definitivo',
